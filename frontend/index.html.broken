@@ -1,0 +1,1894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>State Physics Visualizer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0a0a0f;
+            color: #e0e0e0;
+            overflow: hidden;
+        }
+        
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        .panel {
+            position: fixed;
+            background: rgba(17, 17, 24, 0.95);
+            border: 1px solid #2a2a3a;
+            border-radius: 8px;
+            padding: 15px;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            cursor: default;
+            user-select: none;
+        }
+        
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+            margin: -15px -15px 10px -15px;
+            padding: 10px 15px;
+            background: rgba(42, 42, 58, 0.5);
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .panel-header h3 {
+            margin: 0;
+            padding: 0;
+        }
+        
+        .panel-controls {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .panel-btn {
+            width: 22px;
+            height: 22px;
+            padding: 0;
+            margin: 0;
+            border-radius: 50%;
+            font-size: 12px;
+            line-height: 22px;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            color: #fff;
+            background: #555;
+        }
+        
+        .panel-btn.minimize {
+            background: #f39c12;
+        }
+        
+        .panel-btn.minimize:hover {
+            background: #d68910;
+        }
+        
+        .panel-btn.close {
+            background: #e74c3c;
+        }
+        
+        .panel-btn.close:hover {
+            background: #c0392b;
+        }
+        
+        .panel.minimized .panel-content {
+            display: none;
+        }
+        
+        .panel.minimized {
+            max-height: none !important;
+        }
+        
+        .panel h3 {
+            color: #888;
+            margin-bottom: 10px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* Control Panel */
+        #control-panel {
+            top: 20px;
+            left: 20px;
+            width: 280px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 2px;
+            margin-bottom: 15px;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 8px 5px;
+            background: #1a1a2e;
+            border: 1px solid #2a2a3a;
+            border-radius: 4px 4px 0 0;
+            color: #888;
+            cursor: pointer;
+            font-size: 11px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .tab:hover {
+            background: #2a2a4a;
+            color: #aaa;
+        }
+        
+        .tab.active {
+            background: #2a2a3a;
+            color: #fff;
+            border-color: #3a3a4a;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Section divider */
+        .section {
+            margin: 15px 0;
+            padding-top: 15px;
+            border-top: 1px solid #334;
+        }
+        
+        .section-title {
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+        
+        /* Input group */
+        .input-group {
+            display: flex;
+            gap: 5px;
+            margin: 5px 0;
+        }
+        
+        .input-group input {
+            flex: 1;
+            background: #1a1a2e;
+            border: 1px solid #2a2a3a;
+            color: #fff;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .input-group .btn {
+            flex: 0 0 auto;
+            width: auto;
+            padding: 8px 12px;
+        }
+        
+        /* Toggle switch */
+        .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+        }
+        
+        .toggle {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: #334;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .toggle.active {
+            background: #3a3a4a;
+        }
+        
+        .toggle::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border-radius: 50%;
+            transition: left 0.3s;
+        }
+        
+        .toggle.active::after {
+            left: 22px;
+        }
+        
+        /* Mini stat */
+        .mini-stat {
+            display: inline-block;
+            background: #1a1a2e;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            margin: 2px;
+        }
+        
+        .mini-stat .value {
+            color: #888;
+            font-weight: bold;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #1a1a3a, #2a2a4a);
+            border: 1px solid #445;
+            color: #fff;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            margin: 5px 0;
+            width: 100%;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            background: linear-gradient(135deg, #2a2a5a, #3a3a6a);
+            border-color: #00d4ff;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #0066aa, #0088cc);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #006644, #008855);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #aa3333, #cc4444);
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .btn-group .btn {
+            flex: 1;
+        }
+        
+        /* Stats Panel */
+        #stats-panel {
+            top: 20px;
+            right: 20px;
+            width: 250px;
+        }
+        
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #223;
+        }
+        
+        .stat-label {
+            color: #888;
+            font-size: 12px;
+        }
+        
+        .stat-value {
+            color: #888;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .stat-value.warning {
+            color: #ffaa00;
+        }
+        
+        .stat-value.danger {
+            color: #ff4444;
+        }
+        
+        .stat-value.success {
+            color: #44ff88;
+        }
+        
+        /* Metrics Panel */
+        #metrics-panel {
+            bottom: 20px;
+            left: 20px;
+            width: 300px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        /* Agent Panel */
+        #agent-panel {
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            width: 280px;
+            margin-top: 200px;
+            display: none;
+        }
+        
+        #agent-panel.visible {
+            display: block;
+        }
+        
+        .agent-avatar {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #ff6600, #ffaa00);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin: 0 auto 10px;
+        }
+        
+        .agent-status {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        .agent-status .name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #ffaa00;
+        }
+        
+        .agent-status .state {
+            font-size: 11px;
+            color: #888;
+        }
+        
+        .progress-bar {
+            height: 6px;
+            background: #223;
+            border-radius: 3px;
+            margin: 5px 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6600, #ffaa00);
+            transition: width 0.3s;
+        }
+        
+        .metric-bar {
+            height: 8px;
+            background: #223;
+            border-radius: 4px;
+            margin: 5px 0 15px 0;
+            overflow: hidden;
+        }
+        
+        .metric-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s;
+        }
+        
+        .metric-fill.trust {
+            background: linear-gradient(90deg, #ff4444, #ffaa00, #44ff88);
+        }
+        
+        .metric-fill.entropy {
+            background: linear-gradient(90deg, #0066ff, #00d4ff);
+        }
+        
+        .metric-fill.temperature {
+            background: linear-gradient(90deg, #0044aa, #ff4400);
+        }
+        
+        /* Node Details Panel */
+        #node-panel {
+            bottom: 20px;
+            right: 20px;
+            width: 280px;
+            display: none;
+        }
+        
+        #node-panel.visible {
+            display: block;
+        }
+        
+        .node-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .node-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        
+        .node-icon.user { background: #0066aa; }
+        .node-icon.agent { background: #aa6600; }
+        .node-icon.service { background: #006644; }
+        .node-icon.state { background: #664400; }
+        .node-icon.transaction { background: #440066; }
+        
+        /* Invariants Panel */
+        #invariants-panel {
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            width: 250px;
+        }
+        
+        .invariant-item {
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .invariant-item.ok {
+            background: rgba(0, 100, 50, 0.3);
+            border-left: 3px solid #44ff88;
+        }
+        
+        .invariant-item.violated {
+            background: rgba(100, 0, 0, 0.3);
+            border-left: 3px solid #ff4444;
+        }
+        
+        /* Legend */
+        #legend {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            background: rgba(10, 10, 30, 0.9);
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 1px solid #2a2a3a;
+            z-index: 100;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+        
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        /* Title */
+        #title {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 100;
+        }
+        
+        #title h1 {
+            font-size: 24px;
+            color: #888;
+            text-shadow: none;
+            letter-spacing: 3px;
+        }
+        
+        #title p {
+            font-size: 11px;
+            color: #667;
+            margin-top: 5px;
+        }
+        
+        /* Slider */
+        .slider-container {
+            margin: 10px 0;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: #223;
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #00d4ff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        /* Loading */
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 1000;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid #223;
+            border-top-color: #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Tooltip */
+        #tooltip {
+            position: fixed;
+            background: rgba(0, 0, 20, 0.95);
+            border: 1px solid #00d4ff;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">
+        <div class="spinner"></div>
+    </div>
+    <div class="panel-content">
+        <!-- Control Panel content -->
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('universe')">Universe</div>
+            <div class="tab" onclick="switchTab('physics')">Physics</div>
+            <div class="tab" onclick="switchTab('entropy')">Entropy</div>
+            <div class="tab" onclick="switchTab('agent')">Agent</div>
+            <div class="tab" onclick="switchTab('experiments')">🧪</div>
+        </div>
+        <!-- ... rest of the control panel content ... -->
+    </div>
+</div>
+
+<!-- Stats Panel -->
+<div id="stats-panel" class="panel">
+    <div class="panel-header" onmousedown="startDrag(event, 'stats-panel')">
+        <h3>📊 STATISTICS</h3>
+        <div class="panel-controls">
+            <button class="panel-btn minimize" onclick="minimizePanel('stats-panel')">−</button>
+            <button class="panel-btn close" onclick="hidePanel('stats-panel')">×</button>
+        </div>
+    </div>
+    <div class="panel-content">
+        <!-- Stats Panel content -->
+        <div class="stat-row">
+            <span class="stat-label">Nodes</span>
+            <span class="stat-value" id="stat-nodes">0</span>
+        </div>
+        <!-- ... rest of the stats panel content ... -->
+    </div>
+</div>
+
+<!-- Conservation Laws Panel -->
+<div id="conservation-panel" class="panel">
+    <div class="panel-header" onmousedown="startDrag(event, 'conservation-panel')">
+        <h3>⚖️ CONSERVATION LAWS</h3>
+        <div class="panel-controls">
+            <button class="panel-btn minimize" onclick="minimizePanel('conservation-panel')">−</button>
+            <button class="panel-btn close" onclick="hidePanel('conservation-panel')">×</button>
+        </div>
+    </div>
+    <div class="panel-content">
+        <!-- Conservation Laws Panel content -->
+        <div id="invariants-list"></div>
+        <!-- ... rest of the conservation laws panel content ... -->
+    </div>
+</div>
+
+<!-- Node Info Panel -->
+<div id="node-panel" class="panel">
+    <div class="panel-header" onmousedown="startDrag(event, 'node-panel')">
+        <h3>🔍 NODE INFO</h3>
+        <div class="panel-controls">
+            <button class="panel-btn minimize" onclick="minimizePanel('node-panel')">−</button>
+            <button class="panel-btn close" onclick="hidePanel('node-panel')">×</button>
+        </div>
+    </div>
+    <div class="panel-content">
+        <!-- Node Info Panel content -->
+        <div class="node-header">
+            <div class="node-icon user" id="node-icon">👤</div>
+            <div>
+                <div id="node-dsid" style="font-weight: bold;">-</div>
+                <div id="node-type" style="font-size: 11px; color: #888;">-</div>
+                <!-- ... rest of the node info panel content ... -->
+            </div>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Value</span>
+            <span class="stat-value" id="node-value">0</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Trust Score</span>
+            <span class="stat-value" id="node-trust">0%</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Mass</span>
+            <span class="stat-value" id="node-mass">0</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Temperature</span>
+            <span class="stat-value" id="node-temp">0</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Status</span>
+            <span class="stat-value" id="node-status">-</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Connections</span>
+            <span class="stat-value" id="node-connections">0</span>
+        </div>
+        </div>
+    </div>
+    
+    <!-- Legend -->
+    <div id="legend">
+        <div class="legend-item">
+            <div class="legend-dot" style="background: #0088ff;"></div>
+            <span>User</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background: #ff8800;"></div>
+            <span>Agent</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background: #00ff88;"></div>
+            <span>Service</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background: #8800ff;"></div>
+            <span>State</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background: #ff0088;"></div>
+            <span>Transaction</span>
+        </div>
+    </div>
+    
+    <!-- Tooltip -->
+    <div id="tooltip"></div>
+    
+    <script>
+        // Three.js setup
+        let scene, camera, renderer, controls;
+        let nodes = [], edges = [];
+        let nodeMeshes = {}, edgeLines = {};
+        let selectedNode = null;
+        let autoSimulate = false;
+        let autoSimInterval = null;
+        let entropyEnabled = true;  // Track entropy state for quiescence
+        let simSpeed = 5;  // Simulation speed (steps per tick)
+        
+        // Colors by node type
+        const nodeColors = {
+            'user': 0x0088ff,
+            'agent': 0xff8800,
+            'service': 0x00ff88,
+            'contract': 0x00ffff,
+            'state': 0x8800ff,
+            'memory': 0xaa00ff,
+            'proof': 0xffff00,
+            'anchor': 0xff00ff,
+            'transaction': 0xff0088,
+            'wallet': 0x00ff00,
+            'asset': 0xffaa00
+        };
+        
+        // Initialize Three.js
+        function init() {
+            const container = document.getElementById('canvas-container');
+            
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000011);
+            scene.fog = new THREE.FogExp2(0x000011, 0.001);
+            
+            // Camera
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 10000);
+            camera.position.set(0, 0, 500);
+            
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+            
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+            scene.add(ambientLight);
+            
+            const pointLight = new THREE.PointLight(0x00d4ff, 1, 1000);
+            pointLight.position.set(0, 0, 0);
+            scene.add(pointLight);
+            
+            // Add stars background
+            addStars();
+            
+            // Mouse controls
+            addMouseControls();
+            
+            // Window resize
+            window.addEventListener('resize', onWindowResize);
+            
+            // Start animation
+            animate();
+            
+            // Load initial state
+            loadState();
+        }
+        
+        function addStars() {
+            const geometry = new THREE.BufferGeometry();
+            const vertices = [];
+            
+            for (let i = 0; i < 5000; i++) {
+                vertices.push(
+                    (Math.random() - 0.5) * 4000,
+                    (Math.random() - 0.5) * 4000,
+                    (Math.random() - 0.5) * 4000
+                );
+            }
+            
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            
+            const material = new THREE.PointsMaterial({
+                color: 0x444466,
+                size: 1,
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            const stars = new THREE.Points(geometry, material);
+            scene.add(stars);
+        }
+        
+        function addMouseControls() {
+            let isDragging = false;
+            let previousMousePosition = { x: 0, y: 0 };
+            
+            renderer.domElement.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+            
+            renderer.domElement.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    const deltaX = e.clientX - previousMousePosition.x;
+                    const deltaY = e.clientY - previousMousePosition.y;
+                    
+                    camera.position.x -= deltaX * 0.5;
+                    camera.position.y += deltaY * 0.5;
+                    
+                    previousMousePosition = { x: e.clientX, y: e.clientY };
+                }
+                
+                // Raycast for hover
+                checkHover(e);
+            });
+            
+            renderer.domElement.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+            
+            renderer.domElement.addEventListener('wheel', (e) => {
+                camera.position.z += e.deltaY * 0.5;
+                camera.position.z = Math.max(100, Math.min(2000, camera.position.z));
+            });
+            
+            renderer.domElement.addEventListener('click', (e) => {
+                checkClick(e);
+            });
+        }
+        
+        function checkHover(e) {
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2(
+                (e.clientX / window.innerWidth) * 2 - 1,
+                -(e.clientY / window.innerHeight) * 2 + 1
+            );
+            
+            raycaster.setFromCamera(mouse, camera);
+            const meshes = Object.values(nodeMeshes);
+            const intersects = raycaster.intersectObjects(meshes);
+            
+            const tooltip = document.getElementById('tooltip');
+            
+            if (intersects.length > 0) {
+                const mesh = intersects[0].object;
+                const node = nodes.find(n => n.id === mesh.userData.nodeId);
+                
+                if (node) {
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = e.clientX + 15 + 'px';
+                    tooltip.style.top = e.clientY + 15 + 'px';
+                    tooltip.innerHTML = `
+                        <strong>${node.dsid || node.id}</strong><br>
+                        Type: ${node.type}<br>
+                        Value: ${node.value?.toFixed(2) || 0}<br>
+                        Trust: ${((node.trust_score || 0) * 100).toFixed(0)}%
+                    `;
+                }
+            } else {
+                tooltip.style.display = 'none';
+            }
+        }
+        
+        function checkClick(e) {
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2(
+                (e.clientX / window.innerWidth) * 2 - 1,
+                -(e.clientY / window.innerHeight) * 2 + 1
+            );
+            
+            raycaster.setFromCamera(mouse, camera);
+            const meshes = Object.values(nodeMeshes);
+            const intersects = raycaster.intersectObjects(meshes);
+            
+            if (intersects.length > 0) {
+                const mesh = intersects[0].object;
+                const node = nodes.find(n => n.id === mesh.userData.nodeId);
+                
+                if (node) {
+                    selectNode(node);
+                }
+            } else {
+                deselectNode();
+            }
+        }
+        
+        function selectNode(node) {
+            selectedNode = node;
+            
+            const panel = document.getElementById('node-panel');
+            panel.classList.add('visible');
+            
+            document.getElementById('node-dsid').textContent = node.dsid || node.id;
+            document.getElementById('node-type').textContent = node.type;
+            document.getElementById('node-value').textContent = (node.value || 0).toFixed(2);
+            document.getElementById('node-trust').textContent = ((node.trust_score || 0) * 100).toFixed(0) + '%';
+            document.getElementById('node-mass').textContent = (node.mass || 0).toFixed(2);
+            document.getElementById('node-temp').textContent = (node.temperature || 0).toFixed(2);
+            document.getElementById('node-status').textContent = node.status || 'unknown';
+            
+            // Count connections
+            const incoming = edges.filter(e => e.target === node.id).length;
+            const outgoing = edges.filter(e => e.source === node.id).length;
+            document.getElementById('node-connections').textContent = `${incoming} in / ${outgoing} out`;
+            
+            // Update icon
+            const iconMap = {
+                'user': '👤',
+                'agent': '🤖',
+                'service': '⚙️',
+                'state': '📦',
+                'transaction': '💸'
+            };
+            document.getElementById('node-icon').textContent = iconMap[node.type] || '⬡';
+            document.getElementById('node-icon').className = `node-icon ${node.type}`;
+            
+            // Highlight node
+            if (nodeMeshes[node.id]) {
+                nodeMeshes[node.id].material.emissive.setHex(0xffffff);
+                nodeMeshes[node.id].material.emissiveIntensity = 0.5;
+            }
+        }
+        
+        function deselectNode() {
+            if (selectedNode && nodeMeshes[selectedNode.id]) {
+                nodeMeshes[selectedNode.id].material.emissiveIntensity = 0;
+            }
+            selectedNode = null;
+            document.getElementById('node-panel').classList.remove('visible');
+        }
+        
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        // Quiescence detection state
+        let lastPositions = {};
+        let quiescentTicks = 0;
+        const QUIESCENCE_THRESHOLD = 0.01;  // ε for position delta
+        const QUIESCENCE_TICKS = 30;        // N ticks before sleep
+        let isQuiescent = false;
+        let renderFPS = 60;
+        let lastRenderTime = 0;
+        
+        function checkQuiescence() {
+            if (nodes.length === 0) return false;
+            
+            let maxDelta = 0;
+            for (const node of nodes) {
+                const lastPos = lastPositions[node.id];
+                if (lastPos) {
+                    const dx = Math.abs((node.position?.x || 0) - lastPos.x);
+                    const dy = Math.abs((node.position?.y || 0) - lastPos.y);
+                    const dz = Math.abs((node.position?.z || 0) - lastPos.z);
+                    maxDelta = Math.max(maxDelta, dx, dy, dz);
+                }
+                lastPositions[node.id] = {
+                    x: node.position?.x || 0,
+                    y: node.position?.y || 0,
+                    z: node.position?.z || 0
+                };
+            }
+            
+            if (maxDelta < QUIESCENCE_THRESHOLD) {
+                quiescentTicks++;
+            } else {
+                quiescentTicks = 0;
+            }
+            
+            const wasQuiescent = isQuiescent;
+            isQuiescent = quiescentTicks >= QUIESCENCE_TICKS;
+            
+            // Update render FPS based on quiescence
+            if (isQuiescent && !wasQuiescent) {
+                renderFPS = 1;  // Drop to 1 FPS when quiescent
+                console.log('System quiescent - dropping to 1 FPS');
+                document.getElementById('stat-temp').textContent += ' (sleeping)';
+            } else if (!isQuiescent && wasQuiescent) {
+                renderFPS = 60;  // Back to 60 FPS when active
+                console.log('System active - resuming 60 FPS');
+            }
+            
+            return isQuiescent;
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const now = Date.now();
+            const frameInterval = 1000 / renderFPS;
+            
+            // Throttle rendering based on quiescence
+            if (now - lastRenderTime < frameInterval) {
+                return;  // Skip this frame
+            }
+            lastRenderTime = now;
+            
+            camera.lookAt(0, 0, 0);
+            
+            // Only pulse nodes if not quiescent (saves CPU)
+            if (!isQuiescent) {
+                const nodeIds = Object.keys(nodeMeshes);
+                // Limit pulse updates to first 100 nodes for performance
+                const maxPulse = Math.min(nodeIds.length, 100);
+                for (let i = 0; i < maxPulse; i++) {
+                    const id = nodeIds[i];
+                    const mesh = nodeMeshes[id];
+                    const node = nodes.find(n => n.id === id);
+                    if (node && mesh) {
+                        const pulse = 1 + Math.sin(now * 0.003 * (node.temperature || 1)) * 0.1;
+                        mesh.scale.setScalar(pulse * (mesh.userData.baseScale || 1));
+                    }
+                }
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        // API Functions
+        async function loadState() {
+            try {
+                const response = await fetch('/api/state');
+                const data = await response.json();
+                updateVisualization(data);
+                document.getElementById('loading').style.display = 'none';
+            } catch (error) {
+                console.error('Failed to load state:', error);
+                document.getElementById('loading').innerHTML = '<div>Failed to connect to server</div>';
+            }
+        }
+        
+        async function generateDemo() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('loading').innerHTML = '<div class="spinner"></div><div>Generating Small Universe...</div>';
+            
+            try {
+                const response = await fetch('/api/demo?num_users=30&num_transactions=80', { method: 'POST' });
+                const data = await response.json();
+                updateVisualization(data);
+                
+                // Run initial simulation
+                await runSimulation(50);
+            } catch (error) {
+                console.error('Failed to generate demo:', error);
+            }
+            
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        async function generateGalaxy() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('loading').innerHTML = '<div class="spinner"></div><div>Generating Galaxy (500+ nodes)...</div>';
+            
+            try {
+                const response = await fetch('/api/galaxy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        num_users: 500,
+                        num_transactions: 1500,
+                        num_services: 10,
+                        enable_agent: true,
+                        enable_entropy: true
+                    })
+                });
+                const data = await response.json();
+                updateVisualization(data.state);
+                
+                console.log('Galaxy created:', data.nodes, 'nodes,', data.edges, 'edges');
+                console.log('Agent enabled:', data.agent_enabled);
+                console.log('Entropy enabled:', data.entropy_enabled);
+                
+                // Run initial simulation to spread out
+                await runSimulation(100);
+            } catch (error) {
+                console.error('Failed to generate galaxy:', error);
+            }
+            
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        async function perturbation() {
+            try {
+                const response = await fetch('/api/entropy/perturbation?magnitude=2.0', { method: 'POST' });
+                const data = await response.json();
+                console.log('Perturbation event:', data.event);
+                
+                // Wake up from quiescence after perturbation
+                quiescentTicks = 0;
+                isQuiescent = false;
+                renderFPS = 60;
+                
+                await runSimulation(10);
+            } catch (error) {
+                console.error('Perturbation failed:', error);
+            }
+        }
+        
+        function updateSimSpeed() {
+            simSpeed = parseInt(document.getElementById('sim-speed').value);
+            document.getElementById('sim-speed-value').textContent = simSpeed;
+        }
+        
+        async function runSimulation(steps) {
+            try {
+                const response = await fetch('/api/simulate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ steps })
+                });
+                const data = await response.json();
+                updateVisualization(data.state);
+                
+                // Update entropy metrics
+                if (data.entropy) {
+                    document.getElementById('stat-temp').textContent = data.entropy.temperature?.toFixed(3) || '0';
+                }
+                
+                // Update agent status
+                if (data.agent) {
+                    document.getElementById('stat-agent').textContent = 
+                        `${data.agent.name} ($${data.agent.value?.toFixed(0)})`;
+                    document.getElementById('stat-agent').className = 'stat-value success';
+                }
+                
+                // Check asymmetry
+                checkAsymmetry();
+                
+                // Show instabilities
+                if (data.instabilities && data.instabilities.length > 0) {
+                    console.warn('Instabilities detected:', data.instabilities);
+                }
+            } catch (error) {
+                console.error('Simulation failed:', error);
+            }
+        }
+        
+        function toggleAutoSimulate() {
+            autoSimulate = !autoSimulate;
+            
+            if (autoSimulate) {
+                document.getElementById('auto-sim-text').textContent = '⏸ Stop Simulation';
+                // Use adaptive interval based on quiescence
+                startAdaptiveSimulation();
+            } else {
+                document.getElementById('auto-sim-text').textContent = '⏯ Auto Simulate';
+                clearInterval(autoSimInterval);
+            }
+        }
+        
+        function startAdaptiveSimulation() {
+            clearInterval(autoSimInterval);
+            
+            const tick = async () => {
+                if (!autoSimulate) return;
+                
+                // Skip simulation if quiescent and entropy is off
+                if (isQuiescent && !entropyEnabled) {
+                    // Sleep mode - check every 2 seconds instead of 100ms
+                    autoSimInterval = setTimeout(tick, 2000);
+                    return;
+                }
+                
+                await runSimulation(simSpeed);
+                
+                // Adaptive interval: slower when quiescent
+                const interval = isQuiescent ? 500 : 100;
+                autoSimInterval = setTimeout(tick, interval);
+            };
+            
+            tick();
+        }
+        
+        async function resetUniverse() {
+            try {
+                await fetch('/api/reset', { method: 'POST' });
+                
+                // Clear visualization with proper memory cleanup
+                for (const mesh of Object.values(nodeMeshes)) {
+                    scene.remove(mesh);
+                    mesh.geometry.dispose();
+                    mesh.material.dispose();
+                }
+                for (const line of Object.values(edgeLines)) {
+                    scene.remove(line);
+                    line.geometry.dispose();
+                    line.material.dispose();
+                }
+                nodeMeshes = {};
+                edgeLines = {};
+                nodes = [];
+                edges = [];
+                
+                // Reset quiescence state
+                lastPositions = {};
+                quiescentTicks = 0;
+                isQuiescent = false;
+                renderFPS = 60;
+                
+                updateStats({ node_count: 0, edge_count: 0, total_mass: 0, total_value: 0, average_trust: 0, average_temperature: 0, invariant_violations: 0 });
+            } catch (error) {
+                console.error('Reset failed:', error);
+            }
+        }
+        
+        async function updatePhysics() {
+            const gravity = parseFloat(document.getElementById('gravity').value);
+            const repulsion = parseFloat(document.getElementById('repulsion').value);
+            const damping = parseFloat(document.getElementById('damping').value);
+            
+            document.getElementById('gravity-value').textContent = gravity.toFixed(2);
+            document.getElementById('repulsion-value').textContent = repulsion;
+            document.getElementById('damping-value').textContent = damping.toFixed(2);
+            
+            try {
+                await fetch('/api/physics/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        gravity_constant: gravity,
+                        repulsion_constant: repulsion,
+                        damping: damping
+                    })
+                });
+            } catch (error) {
+                console.error('Failed to update physics:', error);
+            }
+        }
+        
+        function updateVisualization(data) {
+            nodes = data.nodes || [];
+            edges = data.edges || [];
+            
+            // Check quiescence after each update
+            checkQuiescence();
+            
+            // Update/create node meshes
+            for (const node of nodes) {
+                if (nodeMeshes[node.id]) {
+                    // Update position
+                    nodeMeshes[node.id].position.set(
+                        node.position?.x || 0,
+                        node.position?.y || 0,
+                        node.position?.z || 0
+                    );
+                } else {
+                    // Create new mesh
+                    const size = Math.max(3, Math.min(20, (node.mass || 1) * 3));
+                    const geometry = new THREE.SphereGeometry(size, 16, 16);
+                    const color = nodeColors[node.type] || 0xffffff;
+                    const material = new THREE.MeshPhongMaterial({
+                        color: color,
+                        emissive: color,
+                        emissiveIntensity: 0.2,
+                        transparent: true,
+                        opacity: 0.9
+                    });
+                    
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.position.set(
+                        node.position?.x || 0,
+                        node.position?.y || 0,
+                        node.position?.z || 0
+                    );
+                    mesh.userData.nodeId = node.id;
+                    mesh.userData.baseScale = 1;
+                    
+                    scene.add(mesh);
+                    nodeMeshes[node.id] = mesh;
+                }
+            }
+            
+            // Remove old meshes with proper disposal
+            for (const id of Object.keys(nodeMeshes)) {
+                if (!nodes.find(n => n.id === id)) {
+                    const mesh = nodeMeshes[id];
+                    scene.remove(mesh);
+                    mesh.geometry.dispose();
+                    mesh.material.dispose();
+                    delete nodeMeshes[id];
+                }
+            }
+            
+            // Update/create edges - with memory pooling
+            // Dispose old edges properly
+            for (const line of Object.values(edgeLines)) {
+                scene.remove(line);
+                line.geometry.dispose();
+                line.material.dispose();
+            }
+            edgeLines = {};
+            
+            // Limit edge rendering for performance (max 2000 edges visible)
+            const maxEdges = Math.min(edges.length, 2000);
+            const edgeStep = edges.length > maxEdges ? Math.floor(edges.length / maxEdges) : 1;
+            
+            // Shared material for all edges (memory optimization)
+            const sharedEdgeMaterial = new THREE.LineBasicMaterial({
+                color: 0x334455,
+                transparent: true,
+                opacity: 0.3
+            });
+            
+            for (let i = 0; i < edges.length; i += edgeStep) {
+                const edge = edges[i];
+                const sourceNode = nodes.find(n => n.id === edge.source);
+                const targetNode = nodes.find(n => n.id === edge.target);
+                
+                if (sourceNode && targetNode) {
+                    const points = [
+                        new THREE.Vector3(sourceNode.position?.x || 0, sourceNode.position?.y || 0, sourceNode.position?.z || 0),
+                        new THREE.Vector3(targetNode.position?.x || 0, targetNode.position?.y || 0, targetNode.position?.z || 0)
+                    ];
+                    
+                    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                    const line = new THREE.Line(geometry, sharedEdgeMaterial);
+                    scene.add(line);
+                    edgeLines[edge.id] = line;
+                }
+            }
+            
+            // Update stats
+            if (data.metrics) {
+                updateStats(data.metrics);
+            }
+            
+            // Update invariants
+            if (data.invariants) {
+                updateInvariants(data.invariants, data.violations || []);
+            }
+        }
+        
+        function updateStats(metrics) {
+            document.getElementById('stat-nodes').textContent = metrics.node_count || 0;
+            document.getElementById('stat-edges').textContent = metrics.edge_count || 0;
+            document.getElementById('stat-mass').textContent = (metrics.total_mass || 0).toFixed(1);
+            document.getElementById('stat-value').textContent = (metrics.total_value || 0).toFixed(0);
+            document.getElementById('stat-trust').textContent = ((metrics.average_trust || 0) * 100).toFixed(0) + '%';
+            document.getElementById('stat-temp').textContent = (metrics.average_temperature || 0).toFixed(2);
+            
+            const violations = metrics.invariant_violations || 0;
+            const violationsEl = document.getElementById('stat-violations');
+            violationsEl.textContent = violations;
+            violationsEl.className = 'stat-value ' + (violations > 0 ? 'danger' : 'success');
+            
+            // Update bars
+            document.getElementById('trust-bar').style.width = ((metrics.average_trust || 0) * 100) + '%';
+            document.getElementById('entropy-bar').style.width = Math.min(100, (metrics.entropy || 0) * 10) + '%';
+            document.getElementById('temp-bar').style.width = Math.min(100, (metrics.average_temperature || 0) * 20) + '%';
+        }
+        
+        function updateInvariants(invariants, violations) {
+            const list = document.getElementById('invariants-list');
+            list.innerHTML = invariants.map(inv => {
+                const isViolated = violations.some(v => v.invariant === inv.name);
+                return `
+                    <div class="invariant-item ${isViolated ? 'violated' : 'ok'}">
+                        ${isViolated ? '❌' : '✅'} ${inv.name}
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        async function checkAsymmetry() {
+            try {
+                const response = await fetch('/api/asymmetry');
+                const data = await response.json();
+                
+                const asymEl = document.getElementById('stat-asymmetry');
+                asymEl.textContent = (data.asymmetry_score * 100).toFixed(1) + '%';
+                
+                if (data.interpretation === 'emergence_possible') {
+                    asymEl.className = 'stat-value success';
+                } else if (data.interpretation === 'system_frozen') {
+                    asymEl.className = 'stat-value danger';
+                } else {
+                    asymEl.className = 'stat-value warning';
+                }
+            } catch (error) {
+                console.error('Failed to check asymmetry:', error);
+            }
+        }
+        
+        // Tab switching
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.add('active');
+        }
+        
+        // Simulation speed
+        function updateSimSpeed() {
+            simSpeed = parseInt(document.getElementById('sim-speed').value);
+            document.getElementById('sim-speed-value').textContent = simSpeed;
+            
+            // Update interval if auto-simulating
+            if (autoSimulate) {
+                clearInterval(autoSimInterval);
+                autoSimInterval = setInterval(() => runSimulation(simSpeed), 100);
+            }
+        }
+        
+        // Generate custom size universe
+        async function generateCustom(numNodes) {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('loading').innerHTML = `<div class="spinner"></div><div>Generating ${numNodes} nodes...</div>`;
+            
+            try {
+                const response = await fetch('/api/galaxy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        num_users: numNodes,
+                        num_transactions: numNodes * 3,
+                        num_services: Math.max(3, Math.floor(numNodes / 50)),
+                        enable_agent: true,
+                        enable_entropy: true
+                    })
+                });
+                const data = await response.json();
+                updateVisualization(data.state);
+                updateAgentUI(data.agent_enabled);
+                await runSimulation(50);
+            } catch (error) {
+                console.error('Failed to generate:', error);
+            }
+            
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        // Physics presets
+        function applyPhysicsPreset(preset) {
+            const presets = {
+                cold: { gravity: 0.05, repulsion: 50, spring: 0.02, damping: 0.98 },
+                hot: { gravity: 0.3, repulsion: 200, spring: 0.1, damping: 0.7 },
+                dense: { gravity: 0.8, repulsion: 30, spring: 0.15, damping: 0.95 },
+                sparse: { gravity: 0.02, repulsion: 500, spring: 0.01, damping: 0.99 },
+                chaotic: { gravity: 0.5, repulsion: 300, spring: 0.2, damping: 0.5 }
+            };
+            
+            const p = presets[preset];
+            if (!p) return;
+            
+            document.getElementById('gravity').value = p.gravity;
+            document.getElementById('repulsion').value = p.repulsion;
+            document.getElementById('spring').value = p.spring;
+            document.getElementById('damping').value = p.damping;
+            
+            document.getElementById('gravity-value').textContent = p.gravity;
+            document.getElementById('repulsion-value').textContent = p.repulsion;
+            document.getElementById('spring-value').textContent = p.spring;
+            document.getElementById('damping-value').textContent = p.damping;
+            
+            updatePhysics();
+        }
+        
+        // Entropy controls
+        function toggleEntropy() {
+            entropyEnabled = !entropyEnabled;
+            document.getElementById('entropy-toggle').classList.toggle('active', entropyEnabled);
+        }
+        
+        async function updateEntropy() {
+            const posNoise = parseFloat(document.getElementById('pos-noise').value);
+            const velNoise = parseFloat(document.getElementById('vel-noise').value);
+            const trustDecay = parseFloat(document.getElementById('trust-decay').value);
+            const valueDecay = parseFloat(document.getElementById('value-decay').value);
+            const activityRate = parseFloat(document.getElementById('activity-rate').value);
+            
+            document.getElementById('pos-noise-value').textContent = posNoise;
+            document.getElementById('vel-noise-value').textContent = velNoise;
+            document.getElementById('trust-decay-value').textContent = trustDecay;
+            document.getElementById('value-decay-value').textContent = valueDecay;
+            document.getElementById('activity-rate-value').textContent = activityRate;
+            
+            try {
+                await fetch('/api/entropy/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        position_noise: posNoise,
+                        velocity_noise: velNoise,
+                        trust_decay: trustDecay,
+                        value_decay: valueDecay,
+                        activity_probability: activityRate
+                    })
+                });
+            } catch (error) {
+                console.error('Failed to update entropy:', error);
+            }
+        }
+        
+        async function perturbation() {
+            const magnitude = parseFloat(document.getElementById('perturb-mag')?.value || 1.0);
+            try {
+                const response = await fetch(`/api/entropy/perturbation?magnitude=${magnitude}`, { method: 'POST' });
+                const data = await response.json();
+                console.log('Perturbation event:', data.event);
+                await runSimulation(10);
+            } catch (error) {
+                console.error('Perturbation failed:', error);
+            }
+        }
+        
+        // Agent controls
+        let agentActive = false;
+        
+        async function spawnAgent() {
+            const budget = parseFloat(document.getElementById('agent-budget').value);
+            const actionRate = parseFloat(document.getElementById('agent-action').value);
+            
+            try {
+                const response = await fetch(`/api/agent/spawn?budget=${budget}&action_probability=${actionRate}`, { method: 'POST' });
+                const data = await response.json();
+                
+                console.log('Spawn agent response:', data);
+                
+                if (data.success) {
+                    agentActive = true;
+                    updateAgentUI(true);
+                    updateAgentDisplay(data.agent);
+                    document.getElementById('agent-toggle').classList.add('active');
+                } else {
+                    alert('Failed to spawn agent: ' + (data.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Failed to spawn agent:', error);
+                alert('Failed to spawn agent: ' + error.message);
+            }
+        }
+        
+        async function agentStep() {
+            try {
+                const response = await fetch('/api/agent/step', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateAgentDisplay(data.status);
+                    await loadState();
+                }
+            } catch (error) {
+                console.error('Agent step failed:', error);
+            }
+        }
+        
+        async function killAgent() {
+            try {
+                await fetch('/api/agent/kill', { method: 'POST' });
+                agentActive = false;
+                updateAgentUI(false);
+                document.getElementById('agent-toggle').classList.remove('active');
+            } catch (error) {
+                console.error('Failed to kill agent:', error);
+            }
+        }
+        
+        async function spawnMultipleAgents() {
+            const count = parseInt(document.getElementById('multi-agent-count').value);
+            const budget = parseFloat(document.getElementById('agent-budget').value);
+            const actionRate = parseFloat(document.getElementById('agent-action').value);
+            
+            try {
+                const response = await fetch(`/api/agents/spawn?count=${count}&budget=${budget}&action_probability=${actionRate}`, { method: 'POST' });
+                const data = await response.json();
+                
+                console.log('Spawn multiple agents response:', data);
+                
+                if (data.success) {
+                    alert(`Spawned ${data.spawned} agents. Total: ${data.total_agents}`);
+                    document.getElementById('agent-toggle').classList.add('active');
+                }
+            } catch (error) {
+                console.error('Failed to spawn multiple agents:', error);
+            }
+        }
+        
+        async function killAllAgents() {
+            try {
+                const response = await fetch('/api/agents/kill_all', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    agentActive = false;
+                    updateAgentUI(false);
+                    document.getElementById('agent-toggle').classList.remove('active');
+                    alert(`Killed ${data.killed} agents`);
+                }
+            } catch (error) {
+                console.error('Failed to kill all agents:', error);
+            }
+        }
+        
+        function updateAgentUI(active) {
+            agentActive = active;
+            document.getElementById('agent-not-spawned').style.display = active ? 'none' : 'block';
+            document.getElementById('agent-spawned').style.display = active ? 'block' : 'none';
+        }
+        
+        function updateAgentDisplay(agent) {
+            if (!agent) return;
+            
+            document.getElementById('agent-name').textContent = agent.name || 'Prime Agent';
+            document.getElementById('agent-state').textContent = agent.status || 'Active';
+            document.getElementById('agent-budget-display').textContent = '$' + (agent.value || 0).toFixed(0);
+            document.getElementById('agent-trust-display').textContent = ((agent.trust || 0) * 100).toFixed(0) + '%';
+            document.getElementById('agent-tx-display').textContent = agent.successful_transactions || 0;
+            document.getElementById('agent-last-action').textContent = agent.last_action?.action || '-';
+            
+            // Update progress bars
+            const budgetPercent = Math.min(100, (agent.value / 5000) * 100);
+            document.getElementById('agent-budget-bar').style.width = budgetPercent + '%';
+            document.getElementById('agent-trust-bar').style.width = ((agent.trust || 0) * 100) + '%';
+        }
+        
+        // Override runSimulation to update agent display
+        const originalRunSimulation = runSimulation;
+        runSimulation = async function(steps) {
+            try {
+                const response = await fetch('/api/simulate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ steps })
+                });
+                const data = await response.json();
+                updateVisualization(data.state);
+                
+                // Update entropy metrics
+                if (data.entropy) {
+                    document.getElementById('stat-temp').textContent = data.entropy.temperature?.toFixed(3) || '0';
+                }
+                
+                // Update agent status
+                if (data.agent) {
+                    updateAgentUI(true);
+                    updateAgentDisplay(data.agent);
+                    document.getElementById('stat-agent').textContent = 
+                        `${data.agent.name} ($${data.agent.value?.toFixed(0)})`;
+                    document.getElementById('stat-agent').className = 'stat-value success';
+                    document.getElementById('agent-toggle').classList.add('active');
+                } else {
+                    // No agent active
+                    updateAgentUI(false);
+                    document.getElementById('stat-agent').textContent = 'None';
+                    document.getElementById('stat-agent').className = 'stat-value';
+                    document.getElementById('agent-toggle').classList.remove('active');
+                }
+                
+                // Check asymmetry
+                checkAsymmetry();
+                
+                // Show instabilities
+                if (data.instabilities && data.instabilities.length > 0) {
+                    console.warn('Instabilities detected:', data.instabilities);
+                }
+                
+                // Record metrics if recording
+                if (metricsRecording) {
+                    recordMetrics();
+                }
+            } catch (error) {
+                console.error('Simulation failed:', error);
+            }
+        };
+        
+        // Experiment functions
+        async function runExperiment(experimentName) {
+            try {
+                const response = await fetch(`/api/experiment/setup?experiment=${experimentName}`, { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    console.log(`Experiment ${experimentName} setup:`, data);
+                    alert(`Experiment: ${data.experiment}\n\n${data.description}\n\nExpected: ${data.expected}`);
+                    
+                    // Update UI toggles
+                    if (experimentName === 'zero_agent') {
+                        document.getElementById('agent-toggle').classList.remove('active');
+                        document.getElementById('entropy-quick-toggle').classList.add('active');
+                        updateAgentUI(false);
+                    } else if (experimentName === 'stress_test' || experimentName === 'long_run') {
+                        document.getElementById('agent-toggle').classList.add('active');
+                        updateAgentUI(true);
+                    }
+                    
+                    // Reload state
+                    await loadState();
+                } else {
+                    alert('Experiment setup failed: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Experiment setup failed:', error);
+            }
+        }
+        
+        // Quick toggles for experiments
+        async function toggleAgentQuick() {
+            const toggle = document.getElementById('agent-toggle');
+            const isActive = toggle.classList.contains('active');
+            
+            if (isActive) {
+                // Kill agent
+                await fetch('/api/agent/kill', { method: 'POST' });
+                toggle.classList.remove('active');
+                updateAgentUI(false);
+            } else {
+                // Spawn agent
+                await fetch('/api/agent/spawn?budget=5000&action_probability=0.3', { method: 'POST' });
+                toggle.classList.add('active');
+                updateAgentUI(true);
+            }
+        }
+        
+        async function toggleEntropyQuick() {
+            const toggle = document.getElementById('entropy-quick-toggle');
+            const isActive = toggle.classList.contains('active');
+            
+            entropyEnabled = !isActive;  // Track for quiescence
+            await fetch(`/api/entropy/toggle?enabled=${entropyEnabled}`, { method: 'POST' });
+            toggle.classList.toggle('active');
+            
+            // Wake up simulation if entropy turned on
+            if (entropyEnabled) {
+                quiescentTicks = 0;
+                isQuiescent = false;
+                renderFPS = 60;
+            }
+        }
+        
+        async function updateMemoryCost() {
+            const cost = parseFloat(document.getElementById('memory-cost').value);
+            document.getElementById('memory-cost-value').textContent = cost.toFixed(1) + 'x';
+            
+            await fetch(`/api/memory/cost?cost_multiplier=${cost}`, { method: 'POST' });
+        }
+        
+        // Metrics recording for long-run experiments
+        let metricsRecording = false;
+        let metricsHistory = [];
+        
+        function toggleMetricsRecording() {
+            metricsRecording = !metricsRecording;
+            
+            if (metricsRecording) {
+                document.getElementById('metrics-record-text').textContent = '⏹ Stop Recording';
+                document.getElementById('metrics-status').textContent = 'Recording...';
+                metricsHistory = [];
+            } else {
+                document.getElementById('metrics-record-text').textContent = '📊 Start Recording';
+                document.getElementById('metrics-status').textContent = 'Stopped';
+            }
+        }
+        
+        async function recordMetrics() {
+            try {
+                const response = await fetch('/api/metrics/record', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    metricsHistory.push(data.record);
+                    document.getElementById('metrics-count').textContent = metricsHistory.length + ' records';
+                    
+                    // Draw chart
+                    drawAsymmetryChart();
+                }
+            } catch (error) {
+                console.error('Failed to record metrics:', error);
+            }
+        }
+        
+        function drawAsymmetryChart() {
+            const canvas = document.getElementById('asymmetry-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            // Clear
+            ctx.fillStyle = '#111';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            if (metricsHistory.length < 2) return;
+            
+            // Draw asymmetry line
+            const maxAsym = Math.max(...metricsHistory.map(m => m.asymmetry_score), 0.5);
+            const step = canvas.width / (metricsHistory.length - 1);
+            
+            ctx.beginPath();
+            ctx.strokeStyle = '#00d4ff';
+            ctx.lineWidth = 2;
+            
+            metricsHistory.forEach((m, i) => {
+                const x = i * step;
+                const y = canvas.height - (m.asymmetry_score / maxAsym) * canvas.height;
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            
+            ctx.stroke();
+            
+            // Draw threshold line at 0.2 (emergence threshold)
+            const thresholdY = canvas.height - (0.2 / maxAsym) * canvas.height;
+            ctx.beginPath();
+            ctx.strokeStyle = '#44ff88';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            ctx.moveTo(0, thresholdY);
+            ctx.lineTo(canvas.width, thresholdY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        
+        // Draggable panels functionality
+        let draggedPanel = null;
+        let dragOffset = { x: 0, y: 0 };
+        
+        function startDrag(e, panelId) {
+            if (e.target.classList.contains('panel-btn')) return;
+            e.preventDefault();
+            draggedPanel = document.getElementById(panelId);
+            const rect = draggedPanel.getBoundingClientRect();
+            dragOffset.x = e.clientX - rect.left;
+            dragOffset.y = e.clientY - rect.top;
+            draggedPanel.style.zIndex = 200;
+            document.addEventListener('mousemove', onDrag);
+            document.addEventListener('mouseup', stopDrag);
+        }
+        
+        function onDrag(e) {
+            if (!draggedPanel) return;
+            const x = e.clientX - dragOffset.x;
+            const y = e.clientY - dragOffset.y;
+            draggedPanel.style.left = Math.max(0, Math.min(window.innerWidth - 100, x)) + 'px';
+            draggedPanel.style.top = Math.max(0, Math.min(window.innerHeight - 50, y)) + 'px';
+            draggedPanel.style.right = 'auto';
+            draggedPanel.style.bottom = 'auto';
+            draggedPanel.style.transform = 'none';
+        }
+        
+        function stopDrag() {
+            if (draggedPanel) draggedPanel.style.zIndex = 100;
+            draggedPanel = null;
+            document.removeEventListener('mousemove', onDrag);
+            document.removeEventListener('mouseup', stopDrag);
+        }
+        
+        function hidePanel(panelId) {
+            const panel = document.getElementById(panelId);
+            if (panel) panel.style.display = 'none';
+        }
+        
+        function minimizePanel(panelId) {
+            const panel = document.getElementById(panelId);
+            if (panel) panel.classList.toggle('minimized');
+        }
+        
+        // Initialize
+        init();
+    </script>
+</body>
+</html>
