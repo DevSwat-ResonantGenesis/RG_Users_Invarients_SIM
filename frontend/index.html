@@ -2144,15 +2144,15 @@
                     );
                 } else {
                     // Create new mesh
-                    const size = Math.max(3, Math.min(20, (node.mass || 1) * 3));
-                    const geometry = new THREE.SphereGeometry(size, 16, 16);
+                    const size = Math.max(1.5, Math.min(5, (node.mass || 1) * 0.8));
+                    const geometry = new THREE.SphereGeometry(size, 12, 12);
                     const color = nodeColors[node.type] || 0xffffff;
                     const material = new THREE.MeshPhongMaterial({
                         color: color,
                         emissive: color,
-                        emissiveIntensity: 0.2,
+                        emissiveIntensity: 0.15,
                         transparent: true,
-                        opacity: 0.9
+                        opacity: 0.85
                     });
                     
                     const mesh = new THREE.Mesh(geometry, material);
@@ -2200,18 +2200,21 @@
             const maxEdges = Math.min(edges.length, 2000);
             const edgeStep = edges.length > maxEdges ? Math.floor(edges.length / maxEdges) : 1;
             
-            // Shared materials (reused across frames)
-            if (!window.__sharedEdgeMat) {
-                window.__sharedEdgeMat = new THREE.LineBasicMaterial({ color: 0x667eea, transparent: true, opacity: 0.15 });
-                window.__txEdgeMat = new THREE.LineBasicMaterial({ color: 0xFA547C, transparent: true, opacity: 0.45, linewidth: 2 });
+            // Shared materials (reused, recreated if missing)
+            if (!window.__sharedEdgeMat || !window.__sharedEdgeMat.__v2) {
+                if (window.__sharedEdgeMat) window.__sharedEdgeMat.dispose();
+                if (window.__txEdgeMat) window.__txEdgeMat.dispose();
+                window.__sharedEdgeMat = new THREE.LineBasicMaterial({ color: 0x667eea, transparent: true, opacity: 0.12 });
+                window.__sharedEdgeMat.__v2 = true;
+                window.__txEdgeMat = new THREE.LineBasicMaterial({ color: 0xFA547C, transparent: true, opacity: 0.55, linewidth: 2 });
             }
             const sharedEdgeMat = window.__sharedEdgeMat;
             const txEdgeMat = window.__txEdgeMat;
             
             // Shared geometry for flow particles
-            const flowGeo = new THREE.SphereGeometry(1.2, 6, 6);
-            const flowMat = new THREE.MeshBasicMaterial({ color: 0xFA547C, transparent: true, opacity: 0.9 });
-            const flowMatB = new THREE.MeshBasicMaterial({ color: 0xFFD800, transparent: true, opacity: 0.7 });
+            const flowGeo = new THREE.SphereGeometry(1.8, 8, 8);
+            const flowMat = new THREE.MeshBasicMaterial({ color: 0xFA547C, transparent: true, opacity: 1.0 });
+            const flowMatB = new THREE.MeshBasicMaterial({ color: 0xFFD800, transparent: true, opacity: 0.9 });
             
             const txTypes = ['transfers', 'pays', 'stakes'];
             
