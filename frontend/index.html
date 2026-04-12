@@ -1551,12 +1551,16 @@
             <span>Service</span>
         </div>
         <div class="legend-item">
-            <div class="legend-dot" style="background: #FFD800;"></div>
+            <div class="legend-dot" style="background: #8B5CF6;"></div>
             <span>State</span>
         </div>
         <div class="legend-item">
-            <div class="legend-dot" style="background: #FA547C;"></div>
+            <div class="legend-dot" style="background: #F97316;"></div>
             <span>Transaction</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background: #FFD800;"></div>
+            <span>Tx Flow</span>
         </div>
     </div>
     
@@ -1603,13 +1607,13 @@
             'user': 0x01A6BC,
             'agent': 0xFAA525,
             'service': 0x71C23E,
-            'contract': 0x01A6BC,
-            'state': 0xFFD800,
-            'memory': 0xFFD800,
-            'proof': 0x71C23E,
+            'contract': 0x667eea,
+            'state': 0x8B5CF6,
+            'memory': 0xA78BFA,
+            'proof': 0x38BDF8,
             'anchor': 0xFA547C,
-            'transaction': 0xFA547C,
-            'wallet': 0x71C23E,
+            'transaction': 0xF97316,
+            'wallet': 0x34D399,
             'asset': 0xFAA525
         };
         
@@ -1939,9 +1943,14 @@
                 }
             }
             
-            // Animate flow particles along transaction edges
+            // Animate flow particles along transaction edges — follow live node positions
             for (let i = 0; i < flowParticles.length; i++) {
                 const fp = flowParticles[i];
+                // Update start/end from current node mesh positions
+                const sm = nodeMeshes[fp.sourceId];
+                const tm = nodeMeshes[fp.targetId];
+                if (sm) { fp.start.copy(sm.position); }
+                if (tm) { fp.end.copy(tm.position); }
                 fp.t += fp.speed;
                 if (fp.t > 1) fp.t -= 1;  // loop back
                 fp.mesh.position.lerpVectors(fp.start, fp.end, fp.t);
@@ -2201,20 +2210,20 @@
             const edgeStep = edges.length > maxEdges ? Math.floor(edges.length / maxEdges) : 1;
             
             // Shared materials (reused, recreated if missing)
-            if (!window.__sharedEdgeMat || !window.__sharedEdgeMat.__v2) {
+            if (!window.__sharedEdgeMat || !window.__sharedEdgeMat.__v3) {
                 if (window.__sharedEdgeMat) window.__sharedEdgeMat.dispose();
                 if (window.__txEdgeMat) window.__txEdgeMat.dispose();
-                window.__sharedEdgeMat = new THREE.LineBasicMaterial({ color: 0x667eea, transparent: true, opacity: 0.12 });
-                window.__sharedEdgeMat.__v2 = true;
-                window.__txEdgeMat = new THREE.LineBasicMaterial({ color: 0xFA547C, transparent: true, opacity: 0.55, linewidth: 2 });
+                window.__sharedEdgeMat = new THREE.LineBasicMaterial({ color: 0x667eea, transparent: true, opacity: 0.08 });
+                window.__sharedEdgeMat.__v3 = true;
+                window.__txEdgeMat = new THREE.LineBasicMaterial({ color: 0xFFD800, transparent: true, opacity: 0.6, linewidth: 2 });
             }
             const sharedEdgeMat = window.__sharedEdgeMat;
             const txEdgeMat = window.__txEdgeMat;
             
             // Shared geometry for flow particles
             const flowGeo = new THREE.SphereGeometry(1.8, 8, 8);
-            const flowMat = new THREE.MeshBasicMaterial({ color: 0xFA547C, transparent: true, opacity: 1.0 });
-            const flowMatB = new THREE.MeshBasicMaterial({ color: 0xFFD800, transparent: true, opacity: 0.9 });
+            const flowMat = new THREE.MeshBasicMaterial({ color: 0xFFD800, transparent: true, opacity: 1.0 });
+            const flowMatB = new THREE.MeshBasicMaterial({ color: 0x01A6BC, transparent: true, opacity: 0.9 });
             
             const txTypes = ['transfers', 'pays', 'stakes'];
             
@@ -2224,8 +2233,13 @@
                 const targetNode = nodes.find(n => n.id === edge.target);
                 
                 if (sourceNode && targetNode) {
-                    const sp = new THREE.Vector3(sourceNode.position?.x || 0, sourceNode.position?.y || 0, sourceNode.position?.z || 0);
-                    const tp = new THREE.Vector3(targetNode.position?.x || 0, targetNode.position?.y || 0, targetNode.position?.z || 0);
+                    const sx = sourceNode.position?.x || 0, sy = sourceNode.position?.y || 0, sz = sourceNode.position?.z || 0;
+                    const tx = targetNode.position?.x || 0, ty = targetNode.position?.y || 0, tz = targetNode.position?.z || 0;
+                    // Skip edges where either node is at origin (unpositioned)
+                    if (sx === 0 && sy === 0 && sz === 0) continue;
+                    if (tx === 0 && ty === 0 && tz === 0) continue;
+                    const sp = new THREE.Vector3(sx, sy, sz);
+                    const tp = new THREE.Vector3(tx, ty, tz);
                     const points = [sp, tp];
                     
                     const isTx = txTypes.includes(edge.type);
@@ -2242,6 +2256,8 @@
                         scene.add(dot);
                         flowParticles.push({
                             mesh: dot,
+                            sourceId: edge.source,
+                            targetId: edge.target,
                             start: sp.clone(),
                             end: tp.clone(),
                             t: Math.random(),          // start at random position along edge
