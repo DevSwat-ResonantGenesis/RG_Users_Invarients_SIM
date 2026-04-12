@@ -2185,7 +2185,7 @@
                     const baseMass = (node.mass || 1) * 0.8;
                     let size;
                     if (node.type === 'transaction') {
-                        size = Math.max(0.2, Math.min(0.6, baseMass * 0.12));
+                        size = Math.max(0.15, Math.min(0.4, baseMass * 0.08));
                     } else if (node.type === 'agent') {
                         size = Math.max(10, Math.min(20, baseMass * 3.5));
                     } else if (node.type === 'user') {
@@ -2204,10 +2204,10 @@
                     });
                     
                     let mesh;
-                    if (node.type === 'agent') {
-                        // Lego-man figure for agent nodes
+                    if (node.type === 'agent' || node.type === 'user') {
+                        // Lego-man figure (big orange for agent, mini blue for user)
                         mesh = new THREE.Group();
-                        const s = size * 0.4;
+                        const s = (node.type === 'agent') ? size * 0.4 : size * 1.8;
                         // Head (sphere)
                         const head = new THREE.Mesh(new THREE.SphereGeometry(s * 0.45, 10, 10), material);
                         head.position.y = s * 1.35;
@@ -2238,6 +2238,10 @@
                         const rLeg = new THREE.Mesh(new THREE.BoxGeometry(s * 0.25, s * 0.6, s * 0.25), material);
                         rLeg.position.set(s * 0.18, s * 0.0, 0);
                         mesh.add(rLeg);
+                    } else if (node.type === 'transaction') {
+                        // Small flat rectangle for transactions
+                        const geometry = new THREE.BoxGeometry(size * 2.5, size * 0.3, size * 1.2);
+                        mesh = new THREE.Mesh(geometry, material);
                     } else {
                         const geometry = new THREE.SphereGeometry(size, 12, 12);
                         mesh = new THREE.Mesh(geometry, material);
