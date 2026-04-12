@@ -1546,28 +1546,32 @@
     <!-- Legend -->
     <div id="legend" class="panel" onmousedown="startDrag(event, 'legend')">
         <div class="legend-item">
-            <div class="legend-dot" style="background: #01A6BC;"></div>
-            <span>User</span>
+            <div class="legend-dot" style="background: #01A6BC; border-radius: 2px;"></div>
+            <span>User <small style="color:#888">— mini lego man</small></span>
         </div>
         <div class="legend-item">
-            <div class="legend-dot" style="background: #FAA525;"></div>
-            <span>Agent</span>
+            <div class="legend-dot" style="background: #FAA525; border-radius: 2px;"></div>
+            <span>Agent <small style="color:#888">— big lego man</small></span>
         </div>
         <div class="legend-item">
             <div class="legend-dot" style="background: #71C23E;"></div>
-            <span>Service</span>
+            <span>Service <small style="color:#888">— sphere</small></span>
         </div>
         <div class="legend-item">
             <div class="legend-dot" style="background: #8B5CF6;"></div>
-            <span>State</span>
+            <span>State <small style="color:#888">— sphere</small></span>
         </div>
         <div class="legend-item">
-            <div class="legend-dot" style="background: #F97316;"></div>
-            <span>Transaction</span>
+            <div class="legend-dot" style="background: #F97316; border-radius: 1px; width: 16px; height: 6px;"></div>
+            <span>Transaction <small style="color:#888">— rectangle</small></span>
         </div>
         <div class="legend-item">
             <div class="legend-dot" style="background: #FFD800;"></div>
-            <span>Tx Flow</span>
+            <span>Tx Flow <small style="color:#888">— yellow dot</small></span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background: #01A6BC;"></div>
+            <span>Tx Flow <small style="color:#888">— teal dot</small></span>
         </div>
     </div>
     
@@ -2189,7 +2193,7 @@
                     } else if (node.type === 'agent') {
                         size = Math.max(10, Math.min(20, baseMass * 3.5));
                     } else if (node.type === 'user') {
-                        size = Math.max(0.3, Math.min(0.8, baseMass * 0.15));
+                        size = Math.max(0.8, Math.min(2.0, baseMass * 0.4));
                     } else {
                         size = Math.max(0.8, Math.min(2.5, baseMass * 0.5));
                     }
@@ -2339,7 +2343,7 @@
             if (flowParticles.length === 0 && txEdgeList.length > 0) {
                 // Persistent shared materials for flow dots
                 if (!window.__flowGeo) {
-                    window.__flowGeo = new THREE.SphereGeometry(1.2, 8, 8);
+                    window.__flowGeo = new THREE.SphereGeometry(0.5, 6, 6);
                     window.__flowMatA = new THREE.MeshBasicMaterial({ color: 0xFFD800, transparent: true, opacity: 1.0 });
                     window.__flowMatB = new THREE.MeshBasicMaterial({ color: 0x01A6BC, transparent: true, opacity: 0.95 });
                 }
