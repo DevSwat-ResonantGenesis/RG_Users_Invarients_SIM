@@ -2185,11 +2185,11 @@
                     const baseMass = (node.mass || 1) * 0.8;
                     let size;
                     if (node.type === 'transaction') {
-                        size = Math.max(0.6, Math.min(2.0, baseMass * 0.4));
+                        size = Math.max(0.4, Math.min(1.2, baseMass * 0.25));
                     } else if (node.type === 'agent') {
-                        size = Math.max(4, Math.min(8, baseMass * 1.5));
+                        size = Math.max(6, Math.min(14, baseMass * 2.5));
                     } else {
-                        size = Math.max(1.5, Math.min(5, baseMass));
+                        size = Math.max(0.8, Math.min(2.5, baseMass * 0.5));
                     }
                     
                     const color = nodeColors[node.type] || 0xffffff;
