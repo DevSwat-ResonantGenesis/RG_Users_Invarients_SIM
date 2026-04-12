@@ -1590,6 +1590,7 @@
         let scene, camera, renderer, controls;
         let nodes = [], edges = [];
         let nodeMeshes = {}, edgeLines = {};
+        let flowParticles = [];  // animated dots flowing along edges
         let selectedNode = null;
         let autoSimulate = false;
         let autoSimInterval = null;
@@ -1938,6 +1939,17 @@
                 }
             }
             
+            // Animate flow particles along transaction edges
+            for (let i = 0; i < flowParticles.length; i++) {
+                const fp = flowParticles[i];
+                fp.t += fp.speed;
+                if (fp.t > 1) fp.t -= 1;  // loop back
+                fp.mesh.position.lerpVectors(fp.start, fp.end, fp.t);
+                // Pulse size for glow effect
+                const s = 0.8 + Math.sin(fp.t * Math.PI) * 0.5;
+                fp.mesh.scale.setScalar(s);
+            }
+            
             renderer.render(scene, camera);
         }
         
@@ -2173,20 +2185,35 @@
             for (const line of Object.values(edgeLines)) {
                 scene.remove(line);
                 line.geometry.dispose();
-                line.material.dispose();
+                if (line.material !== sharedEdgeMat && line.material !== txEdgeMat) line.material.dispose();
             }
             edgeLines = {};
+            // Dispose old flow particles
+            for (const fp of flowParticles) {
+                scene.remove(fp.mesh);
+                fp.mesh.geometry.dispose();
+                fp.mesh.material.dispose();
+            }
+            flowParticles = [];
             
             // Limit edge rendering for performance (max 2000 edges visible)
             const maxEdges = Math.min(edges.length, 2000);
             const edgeStep = edges.length > maxEdges ? Math.floor(edges.length / maxEdges) : 1;
             
-            // Shared material for all edges (memory optimization)
-            const sharedEdgeMaterial = new THREE.LineBasicMaterial({
-                color: 0x667eea,
-                transparent: true,
-                opacity: 0.2
-            });
+            // Shared materials (reused across frames)
+            if (!window.__sharedEdgeMat) {
+                window.__sharedEdgeMat = new THREE.LineBasicMaterial({ color: 0x667eea, transparent: true, opacity: 0.15 });
+                window.__txEdgeMat = new THREE.LineBasicMaterial({ color: 0xFA547C, transparent: true, opacity: 0.45, linewidth: 2 });
+            }
+            const sharedEdgeMat = window.__sharedEdgeMat;
+            const txEdgeMat = window.__txEdgeMat;
+            
+            // Shared geometry for flow particles
+            const flowGeo = new THREE.SphereGeometry(1.2, 6, 6);
+            const flowMat = new THREE.MeshBasicMaterial({ color: 0xFA547C, transparent: true, opacity: 0.9 });
+            const flowMatB = new THREE.MeshBasicMaterial({ color: 0xFFD800, transparent: true, opacity: 0.7 });
+            
+            const txTypes = ['transacts', 'transaction', 'transfers', 'pays'];
             
             for (let i = 0; i < edges.length; i += edgeStep) {
                 const edge = edges[i];
@@ -2194,15 +2221,30 @@
                 const targetNode = nodes.find(n => n.id === edge.target);
                 
                 if (sourceNode && targetNode) {
-                    const points = [
-                        new THREE.Vector3(sourceNode.position?.x || 0, sourceNode.position?.y || 0, sourceNode.position?.z || 0),
-                        new THREE.Vector3(targetNode.position?.x || 0, targetNode.position?.y || 0, targetNode.position?.z || 0)
-                    ];
+                    const sp = new THREE.Vector3(sourceNode.position?.x || 0, sourceNode.position?.y || 0, sourceNode.position?.z || 0);
+                    const tp = new THREE.Vector3(targetNode.position?.x || 0, targetNode.position?.y || 0, targetNode.position?.z || 0);
+                    const points = [sp, tp];
                     
+                    const isTx = txTypes.includes(edge.type);
                     const geometry = new THREE.BufferGeometry().setFromPoints(points);
-                    const line = new THREE.Line(geometry, sharedEdgeMaterial);
+                    const line = new THREE.Line(geometry, isTx ? txEdgeMat : sharedEdgeMat);
                     scene.add(line);
                     edgeLines[edge.id] = line;
+                    
+                    // Spawn flow particles on transaction edges (limit to 300 for perf)
+                    if (isTx && flowParticles.length < 300) {
+                        const mat = Math.random() > 0.5 ? flowMat : flowMatB;
+                        const dot = new THREE.Mesh(flowGeo, mat);
+                        dot.position.copy(sp);
+                        scene.add(dot);
+                        flowParticles.push({
+                            mesh: dot,
+                            start: sp.clone(),
+                            end: tp.clone(),
+                            t: Math.random(),          // start at random position along edge
+                            speed: 0.003 + Math.random() * 0.004  // varied speeds
+                        });
+                    }
                 }
             }
             
