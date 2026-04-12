@@ -220,6 +220,7 @@
             width: 200px;
             max-height: calc(100vh - 70px);
             overflow-y: auto;
+            overflow-x: hidden;
         }
         
         /* Tabs */
@@ -227,19 +228,25 @@
             display: flex;
             gap: 2px;
             margin-bottom: 15px;
+            flex-wrap: nowrap;
+            overflow: hidden;
         }
         
         .tab {
-            flex: 1;
-            padding: 8px 5px;
+            flex: 1 1 0;
+            min-width: 0;
+            padding: 8px 2px;
             background: var(--rg-tab-bg);
             border: 1px solid var(--rg-tab-border);
             border-radius: 4px 4px 0 0;
             color: var(--rg-tab-text);
             cursor: pointer;
-            font-size: 11px;
+            font-size: 10px;
             text-align: center;
             transition: all 0.3s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         .tab:hover {
@@ -1945,6 +1952,7 @@
             }
             
             // Animate flow particles along transaction edges — follow live node positions
+            // (always animate, even during quiescence — they ARE the live indicator)
             for (let i = 0; i < flowParticles.length; i++) {
                 const fp = flowParticles[i];
                 // Update start/end from current node mesh positions
@@ -1955,8 +1963,8 @@
                 fp.t += fp.speed;
                 if (fp.t > 1) fp.t -= 1;  // loop back
                 fp.mesh.position.lerpVectors(fp.start, fp.end, fp.t);
-                // Pulse size for glow effect
-                const s = 0.8 + Math.sin(fp.t * Math.PI) * 0.5;
+                // Pulse size for glow effect — peaks in the middle of the journey
+                const s = 0.6 + Math.sin(fp.t * Math.PI) * 0.8;
                 fp.mesh.scale.setScalar(s);
             }
             
@@ -2205,8 +2213,8 @@
                 // Normal edges: subtle structure lines
                 window.__sharedEdgeMat = new THREE.LineBasicMaterial({ color: 0x667eea, transparent: true, opacity: 0.15 });
                 window.__sharedEdgeMat.__v4 = true;
-                // Transaction edges: dim lines (flow particles are the real visual)
-                window.__txEdgeMat = new THREE.LineBasicMaterial({ color: 0xFFD800, transparent: true, opacity: 0.12 });
+                // Transaction edges: visible golden lines showing flow paths
+                window.__txEdgeMat = new THREE.LineBasicMaterial({ color: 0xFFD800, transparent: true, opacity: 0.25 });
             }
             const sharedEdgeMat = window.__sharedEdgeMat;
             const txEdgeMat = window.__txEdgeMat;
@@ -2234,7 +2242,7 @@
                     const sp = new THREE.Vector3(sx, sy, sz);
                     const tp = new THREE.Vector3(tx, ty, tz);
                     
-                    const isTx = txTypes.includes(edge.type);
+                    const isTx = txTypes.includes((edge.type || '').toLowerCase());
                     const geometry = new THREE.BufferGeometry().setFromPoints([sp, tp]);
                     const line = new THREE.Line(geometry, isTx ? txEdgeMat : sharedEdgeMat);
                     scene.add(line);
@@ -2246,17 +2254,18 @@
                 }
             }
             
-            // Build flow particles ONCE — then keep them alive across updates
-            if (!flowParticlesBuilt && txEdgeList.length > 0) {
+            // Build flow particles whenever we have tx edges but no particles yet
+            // (rebuilds after reset or if initial build had no positioned edges)
+            if (flowParticles.length === 0 && txEdgeList.length > 0) {
                 // Persistent shared materials for flow dots
                 if (!window.__flowGeo) {
-                    window.__flowGeo = new THREE.SphereGeometry(2.5, 8, 8);
+                    window.__flowGeo = new THREE.SphereGeometry(3.0, 10, 10);
                     window.__flowMatA = new THREE.MeshBasicMaterial({ color: 0xFFD800, transparent: true, opacity: 1.0 });
                     window.__flowMatB = new THREE.MeshBasicMaterial({ color: 0x01A6BC, transparent: true, opacity: 0.95 });
                 }
                 
-                // Spawn up to 400 flow particles spread across tx edges
-                const maxFlow = Math.min(400, txEdgeList.length * 2);
+                // Spawn up to 500 flow particles spread across tx edges
+                const maxFlow = Math.min(500, txEdgeList.length * 3);
                 for (let f = 0; f < maxFlow; f++) {
                     const txe = txEdgeList[f % txEdgeList.length];
                     const mat = (f % 3 === 0) ? window.__flowMatB : window.__flowMatA;
@@ -2270,10 +2279,11 @@
                         start: txe.sp.clone(),
                         end: txe.tp.clone(),
                         t: Math.random(),
-                        speed: 0.006 + Math.random() * 0.008  // faster = clearly visible movement
+                        speed: 0.008 + Math.random() * 0.012  // fast enough to clearly see movement
                     });
                 }
                 flowParticlesBuilt = true;
+                console.log(`[Flow] Created ${flowParticles.length} flow particles from ${txEdgeList.length} tx edges`);
             }
             
             // Update stats
