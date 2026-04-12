@@ -1764,6 +1764,16 @@
             });
         }
         
+        // Helper: find nodeId from hit object (works for Group children too)
+        function getNodeIdFromHit(obj) {
+            let cur = obj;
+            while (cur) {
+                if (cur.userData && cur.userData.nodeId) return cur.userData.nodeId;
+                cur = cur.parent;
+            }
+            return null;
+        }
+        
         function checkHover(e) {
             const raycaster = new THREE.Raycaster();
             const mouse = new THREE.Vector2(
@@ -1773,13 +1783,13 @@
             
             raycaster.setFromCamera(mouse, camera);
             const meshes = Object.values(nodeMeshes);
-            const intersects = raycaster.intersectObjects(meshes);
+            const intersects = raycaster.intersectObjects(meshes, true);
             
             const tooltip = document.getElementById('tooltip');
             
             if (intersects.length > 0) {
-                const mesh = intersects[0].object;
-                const node = nodes.find(n => n.id === mesh.userData.nodeId);
+                const nodeId = getNodeIdFromHit(intersects[0].object);
+                const node = nodes.find(n => n.id === nodeId);
                 
                 if (node) {
                     tooltip.style.display = 'block';
@@ -1806,11 +1816,11 @@
             
             raycaster.setFromCamera(mouse, camera);
             const meshes = Object.values(nodeMeshes);
-            const intersects = raycaster.intersectObjects(meshes);
+            const intersects = raycaster.intersectObjects(meshes, true);
             
             if (intersects.length > 0) {
-                const mesh = intersects[0].object;
-                const node = nodes.find(n => n.id === mesh.userData.nodeId);
+                const nodeId = getNodeIdFromHit(intersects[0].object);
+                const node = nodes.find(n => n.id === nodeId);
                 
                 if (node) {
                     selectNode(node);
@@ -1850,16 +1860,26 @@
             document.getElementById('node-icon').innerHTML = iconMap[node.type] || '?';
             document.getElementById('node-icon').className = `node-icon ${node.type}`;
             
-            // Highlight node
+            // Highlight node (handles both Mesh and Group)
             if (nodeMeshes[node.id]) {
-                nodeMeshes[node.id].material.emissive.setHex(0xffffff);
-                nodeMeshes[node.id].material.emissiveIntensity = 0.5;
+                const obj = nodeMeshes[node.id];
+                if (obj.isGroup) {
+                    obj.traverse(c => { if (c.material) { c.material.emissive.setHex(0xffffff); c.material.emissiveIntensity = 0.5; }});
+                } else if (obj.material) {
+                    obj.material.emissive.setHex(0xffffff);
+                    obj.material.emissiveIntensity = 0.5;
+                }
             }
         }
         
         function deselectNode() {
             if (selectedNode && nodeMeshes[selectedNode.id]) {
-                nodeMeshes[selectedNode.id].material.emissiveIntensity = 0;
+                const obj = nodeMeshes[selectedNode.id];
+                if (obj.isGroup) {
+                    obj.traverse(c => { if (c.material) c.material.emissiveIntensity = 0; });
+                } else if (obj.material) {
+                    obj.material.emissiveIntensity = 0;
+                }
             }
             selectedNode = null;
             document.getElementById('node-panel').classList.remove('visible');
@@ -2161,19 +2181,66 @@
                         node.position?.z || 0
                     );
                 } else {
-                    // Create new mesh
-                    const size = Math.max(1.5, Math.min(5, (node.mass || 1) * 0.8));
-                    const geometry = new THREE.SphereGeometry(size, 12, 12);
+                    // Type-specific sizing
+                    const baseMass = (node.mass || 1) * 0.8;
+                    let size;
+                    if (node.type === 'transaction') {
+                        size = Math.max(0.6, Math.min(2.0, baseMass * 0.4));
+                    } else if (node.type === 'agent') {
+                        size = Math.max(4, Math.min(8, baseMass * 1.5));
+                    } else {
+                        size = Math.max(1.5, Math.min(5, baseMass));
+                    }
+                    
                     const color = nodeColors[node.type] || 0xffffff;
                     const material = new THREE.MeshPhongMaterial({
                         color: color,
                         emissive: color,
-                        emissiveIntensity: 0.15,
+                        emissiveIntensity: node.type === 'agent' ? 0.3 : 0.15,
                         transparent: true,
-                        opacity: 0.85
+                        opacity: node.type === 'transaction' ? 0.7 : 0.85
                     });
                     
-                    const mesh = new THREE.Mesh(geometry, material);
+                    let mesh;
+                    if (node.type === 'agent') {
+                        // Lego-man figure for agent nodes
+                        mesh = new THREE.Group();
+                        const s = size * 0.4;
+                        // Head (sphere)
+                        const head = new THREE.Mesh(new THREE.SphereGeometry(s * 0.45, 10, 10), material);
+                        head.position.y = s * 1.35;
+                        mesh.add(head);
+                        // Hat brim (cylinder)
+                        const brim = new THREE.Mesh(new THREE.CylinderGeometry(s * 0.5, s * 0.5, s * 0.1, 10), material);
+                        brim.position.y = s * 1.6;
+                        mesh.add(brim);
+                        // Body (box)
+                        const body = new THREE.Mesh(new THREE.BoxGeometry(s * 0.7, s * 0.8, s * 0.4), material);
+                        body.position.y = s * 0.7;
+                        mesh.add(body);
+                        // Left arm
+                        const lArm = new THREE.Mesh(new THREE.BoxGeometry(s * 0.2, s * 0.65, s * 0.2), material);
+                        lArm.position.set(-s * 0.45, s * 0.65, 0);
+                        lArm.rotation.z = 0.2;
+                        mesh.add(lArm);
+                        // Right arm
+                        const rArm = new THREE.Mesh(new THREE.BoxGeometry(s * 0.2, s * 0.65, s * 0.2), material);
+                        rArm.position.set(s * 0.45, s * 0.65, 0);
+                        rArm.rotation.z = -0.2;
+                        mesh.add(rArm);
+                        // Left leg
+                        const lLeg = new THREE.Mesh(new THREE.BoxGeometry(s * 0.25, s * 0.6, s * 0.25), material);
+                        lLeg.position.set(-s * 0.18, s * 0.0, 0);
+                        mesh.add(lLeg);
+                        // Right leg
+                        const rLeg = new THREE.Mesh(new THREE.BoxGeometry(s * 0.25, s * 0.6, s * 0.25), material);
+                        rLeg.position.set(s * 0.18, s * 0.0, 0);
+                        mesh.add(rLeg);
+                    } else {
+                        const geometry = new THREE.SphereGeometry(size, 12, 12);
+                        mesh = new THREE.Mesh(geometry, material);
+                    }
+                    
                     mesh.position.set(
                         node.position?.x || 0,
                         node.position?.y || 0,
@@ -2187,13 +2254,20 @@
                 }
             }
             
-            // Remove old meshes with proper disposal
+            // Remove old meshes with proper disposal (handles Groups too)
             for (const id of Object.keys(nodeMeshes)) {
                 if (!nodes.find(n => n.id === id)) {
-                    const mesh = nodeMeshes[id];
-                    scene.remove(mesh);
-                    mesh.geometry.dispose();
-                    mesh.material.dispose();
+                    const obj = nodeMeshes[id];
+                    scene.remove(obj);
+                    if (obj.isGroup) {
+                        obj.traverse(child => {
+                            if (child.geometry) child.geometry.dispose();
+                            if (child.material) child.material.dispose();
+                        });
+                    } else {
+                        if (obj.geometry) obj.geometry.dispose();
+                        if (obj.material) obj.material.dispose();
+                    }
                     delete nodeMeshes[id];
                 }
             }
@@ -2259,7 +2333,7 @@
             if (flowParticles.length === 0 && txEdgeList.length > 0) {
                 // Persistent shared materials for flow dots
                 if (!window.__flowGeo) {
-                    window.__flowGeo = new THREE.SphereGeometry(3.0, 10, 10);
+                    window.__flowGeo = new THREE.SphereGeometry(1.2, 8, 8);
                     window.__flowMatA = new THREE.MeshBasicMaterial({ color: 0xFFD800, transparent: true, opacity: 1.0 });
                     window.__flowMatB = new THREE.MeshBasicMaterial({ color: 0x01A6BC, transparent: true, opacity: 0.95 });
                 }
@@ -2378,6 +2452,10 @@
             }
             flowParticles = [];
             flowParticlesBuilt = false;
+            // Force re-creation of shared geometries/materials
+            if (window.__flowGeo) { window.__flowGeo.dispose(); window.__flowGeo = null; }
+            if (window.__sharedEdgeMat) { window.__sharedEdgeMat.dispose(); window.__sharedEdgeMat = null; }
+            if (window.__txEdgeMat) { window.__txEdgeMat.dispose(); window.__txEdgeMat = null; }
         }
         
         async function generateCustom(numNodes) {
