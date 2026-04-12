@@ -1595,6 +1595,7 @@
         let nodes = [], edges = [];
         let nodeMeshes = {}, edgeLines = {};
         let flowParticles = [];  // animated dots flowing along edges
+        let flowParticlesBuilt = false;  // only build once, then update
         let selectedNode = null;
         let autoSimulate = false;
         let autoSimInterval = null;
@@ -2190,42 +2191,34 @@
             }
             
             // Update/create edges - with memory pooling
-            // Dispose old edges properly
+            // Dispose old edge LINES only (flow particles persist!)
             for (const line of Object.values(edgeLines)) {
                 scene.remove(line);
                 line.geometry.dispose();
-                if (line.material !== sharedEdgeMat && line.material !== txEdgeMat) line.material.dispose();
             }
             edgeLines = {};
-            // Dispose old flow particles
-            for (const fp of flowParticles) {
-                scene.remove(fp.mesh);
-                fp.mesh.geometry.dispose();
-                fp.mesh.material.dispose();
-            }
-            flowParticles = [];
             
-            // Limit edge rendering for performance (max 2000 edges visible)
-            const maxEdges = Math.min(edges.length, 2000);
-            const edgeStep = edges.length > maxEdges ? Math.floor(edges.length / maxEdges) : 1;
-            
-            // Shared materials (reused, recreated if missing)
-            if (!window.__sharedEdgeMat || !window.__sharedEdgeMat.__v3) {
+            // Shared materials (create once, reuse forever)
+            if (!window.__sharedEdgeMat || !window.__sharedEdgeMat.__v4) {
                 if (window.__sharedEdgeMat) window.__sharedEdgeMat.dispose();
                 if (window.__txEdgeMat) window.__txEdgeMat.dispose();
-                window.__sharedEdgeMat = new THREE.LineBasicMaterial({ color: 0x667eea, transparent: true, opacity: 0.08 });
-                window.__sharedEdgeMat.__v3 = true;
-                window.__txEdgeMat = new THREE.LineBasicMaterial({ color: 0xFFD800, transparent: true, opacity: 0.6, linewidth: 2 });
+                // Normal edges: subtle structure lines
+                window.__sharedEdgeMat = new THREE.LineBasicMaterial({ color: 0x667eea, transparent: true, opacity: 0.15 });
+                window.__sharedEdgeMat.__v4 = true;
+                // Transaction edges: dim lines (flow particles are the real visual)
+                window.__txEdgeMat = new THREE.LineBasicMaterial({ color: 0xFFD800, transparent: true, opacity: 0.12 });
             }
             const sharedEdgeMat = window.__sharedEdgeMat;
             const txEdgeMat = window.__txEdgeMat;
             
-            // Shared geometry for flow particles
-            const flowGeo = new THREE.SphereGeometry(1.8, 8, 8);
-            const flowMat = new THREE.MeshBasicMaterial({ color: 0xFFD800, transparent: true, opacity: 1.0 });
-            const flowMatB = new THREE.MeshBasicMaterial({ color: 0x01A6BC, transparent: true, opacity: 0.9 });
-            
             const txTypes = ['transfers', 'pays', 'stakes'];
+            
+            // Build edge lines
+            const maxEdges = Math.min(edges.length, 2000);
+            const edgeStep = edges.length > maxEdges ? Math.floor(edges.length / maxEdges) : 1;
+            
+            // Track which tx edges exist for flow particles
+            const txEdgeList = [];
             
             for (let i = 0; i < edges.length; i += edgeStep) {
                 const edge = edges[i];
@@ -2233,38 +2226,54 @@
                 const targetNode = nodes.find(n => n.id === edge.target);
                 
                 if (sourceNode && targetNode) {
-                    const sx = sourceNode.position?.x || 0, sy = sourceNode.position?.y || 0, sz = sourceNode.position?.z || 0;
-                    const tx = targetNode.position?.x || 0, ty = targetNode.position?.y || 0, tz = targetNode.position?.z || 0;
-                    // Skip edges where either node is at origin (unpositioned)
-                    if (sx === 0 && sy === 0 && sz === 0) continue;
-                    if (tx === 0 && ty === 0 && tz === 0) continue;
+                    const sx = sourceNode.position?.x ?? 0, sy = sourceNode.position?.y ?? 0, sz = sourceNode.position?.z ?? 0;
+                    const tx = targetNode.position?.x ?? 0, ty = targetNode.position?.y ?? 0, tz = targetNode.position?.z ?? 0;
+                    // Skip edges where either node hasn't been positioned yet
+                    if (Math.abs(sx) + Math.abs(sy) + Math.abs(sz) < 0.001) continue;
+                    if (Math.abs(tx) + Math.abs(ty) + Math.abs(tz) < 0.001) continue;
                     const sp = new THREE.Vector3(sx, sy, sz);
                     const tp = new THREE.Vector3(tx, ty, tz);
-                    const points = [sp, tp];
                     
                     const isTx = txTypes.includes(edge.type);
-                    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                    const geometry = new THREE.BufferGeometry().setFromPoints([sp, tp]);
                     const line = new THREE.Line(geometry, isTx ? txEdgeMat : sharedEdgeMat);
                     scene.add(line);
                     edgeLines[edge.id] = line;
                     
-                    // Spawn flow particles on transaction edges (limit to 300 for perf)
-                    if (isTx && flowParticles.length < 300) {
-                        const mat = Math.random() > 0.5 ? flowMat : flowMatB;
-                        const dot = new THREE.Mesh(flowGeo, mat);
-                        dot.position.copy(sp);
-                        scene.add(dot);
-                        flowParticles.push({
-                            mesh: dot,
-                            sourceId: edge.source,
-                            targetId: edge.target,
-                            start: sp.clone(),
-                            end: tp.clone(),
-                            t: Math.random(),          // start at random position along edge
-                            speed: 0.003 + Math.random() * 0.004  // varied speeds
-                        });
+                    if (isTx) {
+                        txEdgeList.push({ source: edge.source, target: edge.target, sp, tp });
                     }
                 }
+            }
+            
+            // Build flow particles ONCE — then keep them alive across updates
+            if (!flowParticlesBuilt && txEdgeList.length > 0) {
+                // Persistent shared materials for flow dots
+                if (!window.__flowGeo) {
+                    window.__flowGeo = new THREE.SphereGeometry(2.5, 8, 8);
+                    window.__flowMatA = new THREE.MeshBasicMaterial({ color: 0xFFD800, transparent: true, opacity: 1.0 });
+                    window.__flowMatB = new THREE.MeshBasicMaterial({ color: 0x01A6BC, transparent: true, opacity: 0.95 });
+                }
+                
+                // Spawn up to 400 flow particles spread across tx edges
+                const maxFlow = Math.min(400, txEdgeList.length * 2);
+                for (let f = 0; f < maxFlow; f++) {
+                    const txe = txEdgeList[f % txEdgeList.length];
+                    const mat = (f % 3 === 0) ? window.__flowMatB : window.__flowMatA;
+                    const dot = new THREE.Mesh(window.__flowGeo, mat);
+                    dot.position.copy(txe.sp);
+                    scene.add(dot);
+                    flowParticles.push({
+                        mesh: dot,
+                        sourceId: txe.source,
+                        targetId: txe.target,
+                        start: txe.sp.clone(),
+                        end: txe.tp.clone(),
+                        t: Math.random(),
+                        speed: 0.006 + Math.random() * 0.008  // faster = clearly visible movement
+                    });
+                }
+                flowParticlesBuilt = true;
             }
             
             // Update stats
@@ -2353,7 +2362,16 @@
         }
         
         // Generate custom size universe
+        function resetFlowParticles() {
+            for (const fp of flowParticles) {
+                scene.remove(fp.mesh);
+            }
+            flowParticles = [];
+            flowParticlesBuilt = false;
+        }
+        
         async function generateCustom(numNodes) {
+            resetFlowParticles();
             document.getElementById('loading').style.display = 'block';
             document.getElementById('loading').innerHTML = `<div class="spinner"></div><div>Generating ${numNodes} nodes...</div>`;
             
@@ -2381,6 +2399,7 @@
         }
         
         async function generateDemo() {
+            resetFlowParticles();
             document.getElementById('loading').style.display = 'block';
             document.getElementById('loading').innerHTML = '<div class="spinner"></div><div>Generating Small Universe...</div>';
             
@@ -2399,6 +2418,7 @@
         }
         
         async function generateGalaxy() {
+            resetFlowParticles();
             document.getElementById('loading').style.display = 'block';
             document.getElementById('loading').innerHTML = '<div class="spinner"></div><div>Generating Galaxy (500+ nodes)...</div>';
             
@@ -2431,6 +2451,7 @@
         }
         
         async function loadPlatformData() {
+            resetFlowParticles();
             document.getElementById('loading').style.display = 'block';
             document.getElementById('loading').innerHTML = '<div class="spinner"></div><div>Loading Real Platform Data...</div>';
             
