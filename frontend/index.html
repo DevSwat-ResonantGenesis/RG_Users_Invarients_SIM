@@ -126,26 +126,28 @@
         
         .panel {
             position: fixed;
-            background: var(--rg-panel-bg);
-            border: 1px solid var(--rg-panel-border);
-            border-radius: 12px;
-            padding: 15px;
+            background: rgba(14, 14, 18, 0.92);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px;
+            padding: 10px;
             z-index: 100;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(16px);
             cursor: default;
             user-select: none;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+            font-size: 0.75em;
         }
         
         .panel-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            cursor: grab;
-            margin: -15px -15px 10px -15px;
-            padding: 10px 15px;
-            background: var(--rg-panel-header-bg);
-            border-bottom: 1px solid var(--rg-panel-border);
-            border-radius: 12px 12px 0 0;
+            cursor: move;
+            margin: -10px -10px 8px -10px;
+            padding: 8px 10px;
+            background: rgba(18, 18, 24, 0.6);
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            border-radius: 10px 10px 0 0;
             user-select: none;
         }
         
@@ -156,8 +158,8 @@
         .panel-header h3 {
             margin: 0;
             padding: 0;
-            color: var(--rg-title);
-            font-size: 14px;
+            color: #888;
+            font-size: 0.95em;
             font-weight: 600;
         }
         
@@ -182,19 +184,19 @@
         }
         
         .panel-btn.minimize {
-            background: #f39c12;
+            background: rgba(255,255,255,0.35);
         }
         
         .panel-btn.minimize:hover {
-            background: #d68910;
+            background: rgba(255,255,255,0.2);
         }
         
         .panel-btn.close {
-            background: #e74c3c;
+            background: rgba(255,255,255,0.4);
         }
         
         .panel-btn.close:hover {
-            background: #c0392b;
+            background: rgba(255,255,255,0.3);
         }
         
         .panel.minimized .panel-content {
@@ -206,19 +208,17 @@
         }
         
         .panel h3 {
-            color: var(--rg-muted);
-            margin-bottom: 10px;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            color: #888;
+            margin-bottom: 6px;
+            font-size: 0.85em;
         }
         
         /* Control Panel */
         #control-panel {
-            top: 20px;
-            left: 20px;
-            width: 280px;
-            max-height: calc(100vh - 40px);
+            top: 50px;
+            left: 10px;
+            width: 200px;
+            max-height: calc(100vh - 70px);
             overflow-y: auto;
         }
         
@@ -248,9 +248,9 @@
         }
         
         .tab.active {
-            background: rgba(14, 165, 233, 0.15);
-            border-color: rgba(14, 165, 233, 0.3);
-            color: #0ea5e9;
+            background: rgba(255, 216, 0, 0.12);
+            border-color: rgba(255, 216, 0, 0.25);
+            color: #FFD800;
         }
         
         .tab-content {
@@ -318,7 +318,7 @@
         }
         
         .toggle.active {
-            background: rgba(14, 165, 233, 0.25);
+            background: rgba(255, 216, 0, 0.25);
         }
         
         .toggle::after {
@@ -353,33 +353,40 @@
         }
         
         .btn {
-            background: linear-gradient(135deg, #1a1a3a, #2a2a4a);
-            border: 1px solid #445;
-            color: #fff;
-            padding: 10px 15px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: #e0e0e8;
+            padding: 6px 10px;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 13px;
-            margin: 5px 0;
+            font-size: 0.8em;
+            margin: 4px 0;
             width: 100%;
-            transition: all 0.3s;
+            transition: all 0.15s ease;
+            font-weight: bold;
         }
         
         .btn:hover {
-            background: linear-gradient(135deg, #2a2a5a, #3a3a6a);
-            border-color: #00d4ff;
+            opacity: 0.9;
+        }
+        
+        .btn:active {
+            transform: scale(0.97);
         }
         
         .btn-primary {
-            background: linear-gradient(135deg, #0066aa, #0088cc);
+            background: linear-gradient(135deg, rgba(255,216,0,0.2), rgba(250,165,37,0.12));
+            border: 1px solid rgba(255,216,0,0.3);
         }
         
         .btn-success {
-            background: linear-gradient(135deg, #006644, #008855);
+            background: linear-gradient(135deg, rgba(0,230,118,0.25), rgba(0,200,100,0.15));
+            border: 1px solid rgba(0,230,118,0.3);
         }
         
         .btn-danger {
-            background: linear-gradient(135deg, #aa3333, #cc4444);
+            background: linear-gradient(135deg, rgba(255,68,102,0.25), rgba(220,50,80,0.15));
+            border: 1px solid rgba(255,68,102,0.3);
         }
         
         .btn-group {
@@ -393,9 +400,9 @@
         
         /* Stats Panel */
         #stats-panel {
-            top: 20px;
-            right: 20px;
-            width: 250px;
+            top: 50px;
+            right: 10px;
+            width: 200px;
         }
         
         .stat-row {
@@ -417,33 +424,36 @@
         }
         
         .stat-value.warning {
-            color: #ffaa00;
+            color: #FAA525;
         }
         
         .stat-value.danger {
-            color: #ff4444;
+            color: #FA547C;
         }
         
         .stat-value.success {
-            color: #44ff88;
+            color: #71C23E;
+        }
+        
+        .stat-value.info {
+            color: #FFD800;
         }
         
         /* Metrics Panel */
         #metrics-panel {
-            top: 300px;
-            right: 20px;
-            width: 250px;
+            top: 50px;
+            right: 220px;
+            width: 200px;
             max-height: 300px;
             overflow-y: auto;
+            display: none;
         }
         
         /* Agent Panel */
         #agent-panel {
-            top: 50%;
-            left: 20px;
-            transform: translateY(-50%);
-            width: 280px;
-            margin-top: 200px;
+            bottom: 100px;
+            left: 10px;
+            width: 200px;
             display: none;
         }
         
@@ -454,7 +464,7 @@
         .agent-avatar {
             width: 50px;
             height: 50px;
-            background: linear-gradient(135deg, #ff6600, #ffaa00);
+            background: linear-gradient(135deg, #FAA525, #FFD800);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -471,7 +481,7 @@
         .agent-status .name {
             font-size: 16px;
             font-weight: bold;
-            color: #ffaa00;
+            color: #FFD800;
         }
         
         .agent-status .state {
@@ -489,7 +499,7 @@
         
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #ff6600, #ffaa00);
+            background: linear-gradient(90deg, #FAA525, #FFD800);
             transition: width 0.3s;
         }
         
@@ -508,22 +518,22 @@
         }
         
         .metric-fill.trust {
-            background: linear-gradient(90deg, #ff4444, #ffaa00, #44ff88);
+            background: linear-gradient(90deg, #FA547C, #FAA525, #71C23E);
         }
         
         .metric-fill.entropy {
-            background: linear-gradient(90deg, #0066ff, #00d4ff);
+            background: linear-gradient(90deg, #01A6BC, #FFD800);
         }
         
         .metric-fill.temperature {
-            background: linear-gradient(90deg, #0044aa, #ff4400);
+            background: linear-gradient(90deg, #01A6BC, #FA547C);
         }
         
         /* Node Details Panel */
         #node-panel {
-            bottom: 80px;
-            right: 20px;
-            width: 280px;
+            bottom: 100px;
+            right: 10px;
+            width: 200px;
             display: none;
         }
         
@@ -548,17 +558,18 @@
             font-size: 20px;
         }
         
-        .node-icon.user { background: #0066aa; }
-        .node-icon.agent { background: #aa6600; }
-        .node-icon.service { background: #006644; }
-        .node-icon.state { background: #664400; }
-        .node-icon.transaction { background: #440066; }
+        .node-icon.user { background: #01A6BC; }
+        .node-icon.agent { background: #FAA525; }
+        .node-icon.service { background: #71C23E; }
+        .node-icon.state { background: #FFD800; }
+        .node-icon.transaction { background: #FA547C; }
         
         /* Invariants Panel */
         #invariants-panel {
-            top: 300px;
-            left: 320px;
-            width: 250px;
+            bottom: 100px;
+            left: 220px;
+            width: 200px;
+            display: none;
         }
         
         .invariant-item {
@@ -586,12 +597,14 @@
             transform: translateX(-50%);
             display: flex;
             gap: 20px;
-            background: rgba(10, 10, 30, 0.9);
+            background: rgba(14, 14, 18, 0.92);
             padding: 10px 20px;
             border-radius: 20px;
-            border: 1px solid #2a2a3a;
+            border: 1px solid rgba(255,255,255,0.06);
             z-index: 100;
             cursor: grab;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.5);
         }
         
         #legend:active {
@@ -631,7 +644,7 @@
         #title h1 {
             font-size: 24px;
             color: #e0e0e0;
-            text-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+            text-shadow: 0 0 10px rgba(255, 216, 0, 0.2);
             letter-spacing: 3px;
         }
         
@@ -661,13 +674,14 @@
             border-radius: 3px;
             outline: none;
             -webkit-appearance: none;
+            appearance: none;
         }
         
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
-            background: #00d4ff;
+            width: 14px;
+            height: 14px;
+            background: #FFD800;
             border-radius: 50%;
             cursor: pointer;
         }
@@ -675,45 +689,68 @@
         /* Loading */
         #loading {
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(10, 10, 12, 0.96);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             z-index: 1000;
         }
         
         .spinner {
             width: 50px;
             height: 50px;
-            border: 3px solid #223;
-            border-top-color: #00d4ff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+            position: relative;
         }
         
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .spinner-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            position: absolute; top: 50%; left: 50%;
+            margin: -4px 0 0 -4px;
+            animation: dotOrbit 1.4s linear infinite;
+        }
+        .spinner-dot:nth-child(1) { background: #FFD800; animation-delay: 0s; }
+        .spinner-dot:nth-child(2) { background: #01A6BC; animation-delay: -0.2s; }
+        .spinner-dot:nth-child(3) { background: #71C23E; animation-delay: -0.4s; }
+        .spinner-dot:nth-child(4) { background: #FFFFFF; animation-delay: -0.6s; }
+        .spinner-dot:nth-child(5) { background: #FA547C; animation-delay: -0.8s; }
+        .spinner-dot:nth-child(6) { background: #FAA525; animation-delay: -1.0s; }
+        .spinner-dot:nth-child(7) { background: #121214; border: 1px solid rgba(255,255,255,0.15); animation-delay: -1.2s; }
+        
+        @keyframes dotOrbit {
+            0% { transform: rotate(0deg) translateX(20px) scale(1); opacity: 1; }
+            50% { transform: rotate(180deg) translateX(20px) scale(0.6); opacity: 0.5; }
+            100% { transform: rotate(360deg) translateX(20px) scale(1); opacity: 1; }
         }
         
         /* Tooltip */
         #tooltip {
             position: fixed;
-            background: rgba(0, 0, 20, 0.95);
-            border: 1px solid #00d4ff;
+            background: rgba(14, 14, 18, 0.97);
+            border: 1px solid rgba(255, 216, 0, 0.2);
             padding: 10px 15px;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 12px;
             pointer-events: none;
             z-index: 1000;
             display: none;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.6);
         }
     </style>
 </head>
 <body>
     <div id="loading">
-        <div class="spinner"></div>
-        <div>Initializing State Physics...</div>
+        <div class="spinner">
+            <div class="spinner-dot"></div>
+            <div class="spinner-dot"></div>
+            <div class="spinner-dot"></div>
+            <div class="spinner-dot"></div>
+            <div class="spinner-dot"></div>
+            <div class="spinner-dot"></div>
+            <div class="spinner-dot"></div>
+        </div>
+        <div style="margin-top:20px; color: rgba(255,216,0,0.7); font-size: 0.95em; letter-spacing: 0.3px;">Initializing State Physics...</div>
     </div>
     
     <div id="canvas-container"></div>
@@ -945,12 +982,12 @@
                 <!-- Node Colors -->
                 <h3 style="color: #667eea; border-bottom: 1px solid #333; padding-bottom: 8px; margin-top: 24px;"><svg style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;"><use href="#icon-palette"/></svg>Node Colors</h3>
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 12px 0;">
-                    <div><span style="display: inline-block; width: 14px; height: 14px; background: #0088ff; border-radius: 50%; margin-right: 6px;"></span>User</div>
-                    <div><span style="display: inline-block; width: 14px; height: 14px; background: #ff8800; border-radius: 50%; margin-right: 6px;"></span>Agent</div>
-                    <div><span style="display: inline-block; width: 14px; height: 14px; background: #00ff88; border-radius: 50%; margin-right: 6px;"></span>Service</div>
-                    <div><span style="display: inline-block; width: 14px; height: 14px; background: #8800ff; border-radius: 50%; margin-right: 6px;"></span>State</div>
-                    <div><span style="display: inline-block; width: 14px; height: 14px; background: #ff0088; border-radius: 50%; margin-right: 6px;"></span>Transaction</div>
-                    <div><span style="display: inline-block; width: 14px; height: 14px; background: #00ffff; border-radius: 50%; margin-right: 6px;"></span>Contract</div>
+                    <div><span style="display: inline-block; width: 14px; height: 14px; background: #01A6BC; border-radius: 50%; margin-right: 6px;"></span>User</div>
+                    <div><span style="display: inline-block; width: 14px; height: 14px; background: #FAA525; border-radius: 50%; margin-right: 6px;"></span>Agent</div>
+                    <div><span style="display: inline-block; width: 14px; height: 14px; background: #71C23E; border-radius: 50%; margin-right: 6px;"></span>Service</div>
+                    <div><span style="display: inline-block; width: 14px; height: 14px; background: #FFD800; border-radius: 50%; margin-right: 6px;"></span>State</div>
+                    <div><span style="display: inline-block; width: 14px; height: 14px; background: #FA547C; border-radius: 50%; margin-right: 6px;"></span>Transaction</div>
+                    <div><span style="display: inline-block; width: 14px; height: 14px; background: #01A6BC; border-radius: 50%; margin-right: 6px;"></span>Contract</div>
                 </div>
                 
                 <!-- Real World Applications -->
@@ -1006,7 +1043,7 @@
             
             <div class="section-title" style="margin-top: 16px;"><svg style="width: 12px; height: 12px; vertical-align: middle; margin-right: 4px;"><use href="#icon-database"/></svg>Real Data</div>
             
-            <button class="btn btn-primary" onclick="loadPlatformData()" style="background: linear-gradient(135deg, #10b981, #059669);">
+            <button class="btn btn-success" onclick="loadPlatformData()">
                 Load Platform Data
             </button>
             
@@ -1484,39 +1521,41 @@
         transform: translateX(-50%);
         display: flex;
         gap: 8px;
-        background: rgba(10, 10, 30, 0.95);
-        padding: 8px 16px;
-        border-radius: 12px;
-        border: 1px solid #2a2a3a;
+        background: rgba(14, 14, 18, 0.9);
+        padding: 5px 15px;
+        border-radius: 20px;
+        border: 1px solid rgba(255, 216, 0, 0.15);
         z-index: 500;
+        backdrop-filter: blur(16px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     ">
-        <button onclick="showPanel('control-panel')" style="background: #1a1a2e; border: 1px solid #3a3a4a; color: #888; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;"><svg style="width: 12px; height: 12px; vertical-align: middle; margin-right: 4px;"><use href="#icon-gamepad"/></svg>Control</button>
-        <button onclick="showPanel('stats-panel')" style="background: #1a1a2e; border: 1px solid #3a3a4a; color: #888; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;"><svg style="width: 12px; height: 12px; vertical-align: middle; margin-right: 4px;"><use href="#icon-chart-bar"/></svg>Stats</button>
-        <button onclick="showPanel('metrics-panel')" style="background: #1a1a2e; border: 1px solid #3a3a4a; color: #888; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;"><svg style="width: 12px; height: 12px; vertical-align: middle; margin-right: 4px;"><use href="#icon-chart-line"/></svg>Metrics</button>
-        <button onclick="showPanel('invariants-panel')" style="background: #1a1a2e; border: 1px solid #3a3a4a; color: #888; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;"><svg style="width: 12px; height: 12px; vertical-align: middle; margin-right: 4px;"><use href="#icon-scale"/></svg>Laws</button>
-        <button onclick="showPanel('legend')" style="background: #1a1a2e; border: 1px solid #3a3a4a; color: #888; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;"><svg style="width: 12px; height: 12px; vertical-align: middle; margin-right: 4px;"><use href="#icon-palette"/></svg>Legend</button>
+        <button onclick="showPanel('control-panel')" style="background: rgba(255,216,0,0.12); border: 1px solid rgba(255,216,0,0.25); color: #e0e0e8; padding: 5px 10px; border-radius: 12px; cursor: pointer; font-size: 0.7em;"><svg style="width: 12px; height: 12px; vertical-align: middle; margin-right: 4px;"><use href="#icon-gamepad"/></svg>Control</button>
+        <button onclick="showPanel('stats-panel')" style="background: rgba(255,216,0,0.12); border: 1px solid rgba(255,216,0,0.25); color: #e0e0e8; padding: 5px 10px; border-radius: 12px; cursor: pointer; font-size: 0.7em;"><svg style="width: 12px; height: 12px; vertical-align: middle; margin-right: 4px;"><use href="#icon-chart-bar"/></svg>Stats</button>
+        <button onclick="showPanel('metrics-panel')" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: #888; padding: 5px 10px; border-radius: 12px; cursor: pointer; font-size: 0.7em;"><svg style="width: 12px; height: 12px; vertical-align: middle; margin-right: 4px;"><use href="#icon-chart-line"/></svg>Metrics</button>
+        <button onclick="showPanel('invariants-panel')" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: #888; padding: 5px 10px; border-radius: 12px; cursor: pointer; font-size: 0.7em;"><svg style="width: 12px; height: 12px; vertical-align: middle; margin-right: 4px;"><use href="#icon-scale"/></svg>Laws</button>
+        <button onclick="showPanel('legend')" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: #888; padding: 5px 10px; border-radius: 12px; cursor: pointer; font-size: 0.7em;"><svg style="width: 12px; height: 12px; vertical-align: middle; margin-right: 4px;"><use href="#icon-palette"/></svg>Legend</button>
     </div>
     
     <!-- Legend -->
     <div id="legend" class="panel" onmousedown="startDrag(event, 'legend')">
         <div class="legend-item">
-            <div class="legend-dot" style="background: #0088ff;"></div>
+            <div class="legend-dot" style="background: #01A6BC;"></div>
             <span>User</span>
         </div>
         <div class="legend-item">
-            <div class="legend-dot" style="background: #ff8800;"></div>
+            <div class="legend-dot" style="background: #FAA525;"></div>
             <span>Agent</span>
         </div>
         <div class="legend-item">
-            <div class="legend-dot" style="background: #00ff88;"></div>
+            <div class="legend-dot" style="background: #71C23E;"></div>
             <span>Service</span>
         </div>
         <div class="legend-item">
-            <div class="legend-dot" style="background: #8800ff;"></div>
+            <div class="legend-dot" style="background: #FFD800;"></div>
             <span>State</span>
         </div>
         <div class="legend-item">
-            <div class="legend-dot" style="background: #ff0088;"></div>
+            <div class="legend-dot" style="background: #FA547C;"></div>
             <span>Transaction</span>
         </div>
     </div>
@@ -1560,17 +1599,17 @@
         
         // Colors by node type
         const nodeColors = {
-            'user': 0x0088ff,
-            'agent': 0xff8800,
-            'service': 0x00ff88,
-            'contract': 0x00ffff,
-            'state': 0x8800ff,
-            'memory': 0xaa00ff,
-            'proof': 0xffff00,
-            'anchor': 0xff00ff,
-            'transaction': 0xff0088,
-            'wallet': 0x00ff00,
-            'asset': 0xffaa00
+            'user': 0x01A6BC,
+            'agent': 0xFAA525,
+            'service': 0x71C23E,
+            'contract': 0x01A6BC,
+            'state': 0xFFD800,
+            'memory': 0xFFD800,
+            'proof': 0x71C23E,
+            'anchor': 0xFA547C,
+            'transaction': 0xFA547C,
+            'wallet': 0x71C23E,
+            'asset': 0xFAA525
         };
         
         // Cleanup function to prevent WebGL context leaks
@@ -1629,7 +1668,7 @@
             const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
             scene.add(ambientLight);
             
-            const pointLight = new THREE.PointLight(0x00d4ff, 1, 1000);
+            const pointLight = new THREE.PointLight(0xFFD800, 0.6, 1000);
             pointLight.position.set(0, 0, 0);
             scene.add(pointLight);
             
@@ -2144,9 +2183,9 @@
             
             // Shared material for all edges (memory optimization)
             const sharedEdgeMaterial = new THREE.LineBasicMaterial({
-                color: 0x334455,
+                color: 0x667eea,
                 transparent: true,
-                opacity: 0.3
+                opacity: 0.2
             });
             
             for (let i = 0; i < edges.length; i += edgeStep) {
